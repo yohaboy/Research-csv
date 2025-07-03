@@ -10,6 +10,7 @@ from html.parser import HTMLParser
 from datetime import datetime, timedelta
 from django.db.models import Count, Q, F
 from django.urls import reverse
+import json
 
 class CSVUploadForm(forms.Form):
     csv_file = forms.FileField()
@@ -144,17 +145,137 @@ example_publication = {
 }
 
 def query_scopus_api(scopus_id, since_date):
-    # TODO: Replace with real API call and parsing
-    # Return a list of publication dicts
-    return [example_publication]
+    """
+    Query the Elsevier Scopus API for publications by author ID since a given date.
+    Returns a list of dicts: title, publication_date, keywords, abstract, author_order.
+    """
+    API_KEY = 'YOUR_SCOPUS_API_KEY'  # <-- Replace with your real key
+    headers = {
+        'Accept': 'application/json',
+        'X-ELS-APIKey': API_KEY,
+    }
+    url = f'https://api.elsevier.com/content/search/scopus?query=AU-ID({scopus_id})&date={since_date.year}'
+    try:
+        resp = requests.get(url, headers=headers, timeout=10)
+        if resp.status_code != 200:
+            return []
+        data = resp.json()
+        results = []
+        for entry in data.get('search-results', {}).get('entry', []):
+            title = entry.get('dc:title', '')
+            date_str = entry.get('prism:coverDate', '')
+            try:
+                pub_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+            except Exception:
+                continue
+            if pub_date < since_date:
+                continue
+            keywords = entry.get('authkeywords', '')
+            abstract = entry.get('dc:description', '')
+            # Author order not available in this endpoint
+            results.append({
+                'title': title,
+                'publication_date': pub_date,
+                'keywords': keywords,
+                'abstract': abstract,
+                'author_order': 1,
+            })
+        return results
+    except Exception:
+        return []
 
 def query_scholar_api(scholar_id, since_date):
-    # TODO: Replace with real API call and parsing
-    return []
+    """
+    Scrape Google Scholar profile for publications since a given date.
+    Returns a list of dicts: title, publication_date, keywords, abstract, author_order.
+    """
+    url = f'https://scholar.google.com/citations?user={scholar_id}&hl=en'
+    try:
+        resp = requests.get(url, timeout=10)
+        if resp.status_code != 200:
+            return []
+        html = resp.text
+        # Very basic parsing: look for publication rows
+        from html.parser import HTMLParser
+        class ScholarPubParser(HTMLParser):
+            def __init__(self):
+                super().__init__()
+                self.in_title = False
+                self.in_year = False
+                self.current_title = ''
+                self.current_year = ''
+                self.pubs = []
+            def handle_starttag(self, tag, attrs):
+                attrs = dict(attrs)
+                if tag == 'a' and attrs.get('class', '') == 'gsc_a_at':
+                    self.in_title = True
+                if tag == 'span' and attrs.get('class', '') == 'gsc_a_h gsc_a_hc gs_ibl':
+                    self.in_year = True
+            def handle_endtag(self, tag):
+                if self.in_title and tag == 'a':
+                    self.in_title = False
+                if self.in_year and tag == 'span':
+                    self.in_year = False
+            def handle_data(self, data):
+                if self.in_title:
+                    self.current_title = data.strip()
+                if self.in_year:
+                    self.current_year = data.strip()
+                    if self.current_title and self.current_year.isdigit():
+                        year = int(self.current_year)
+                        if year >= since_date.year:
+                            self.pubs.append({
+                                'title': self.current_title,
+                                'publication_date': datetime(year, 1, 1).date(),
+                                'keywords': '',
+                                'abstract': '',
+                                'author_order': 1,
+                            })
+                        self.current_title = ''
+                        self.current_year = ''
+        parser = ScholarPubParser()
+        parser.feed(html)
+        return parser.pubs
+    except Exception:
+        return []
 
 def query_orcid_api(orcid_id, since_date):
-    # TODO: Replace with real API call and parsing
-    return []
+    """
+    Query the public OrcID API for works since a given date.
+    Returns a list of dicts: title, publication_date, keywords, abstract, author_order.
+    """
+    url = f'https://pub.orcid.org/v3.0/{orcid_id}/works'
+    headers = {'Accept': 'application/json'}
+    try:
+        resp = requests.get(url, headers=headers, timeout=10)
+        if resp.status_code != 200:
+            return []
+        data = resp.json()
+        results = []
+        for group in data.get('group', []):
+            work = group.get('work-summary', [{}])[0]
+            title = work.get('title', {}).get('title', {}).get('value', '')
+            date_parts = work.get('publication-date', {})
+            year = int(date_parts.get('year', {}).get('value', 0) or 0)
+            month = int(date_parts.get('month', {}).get('value', 1) or 1)
+            day = int(date_parts.get('day', {}).get('value', 1) or 1)
+            try:
+                pub_date = datetime(year, month, day).date()
+            except Exception:
+                continue
+            if pub_date < since_date:
+                continue
+            # OrcID does not provide keywords/abstract in summary
+            results.append({
+                'title': title,
+                'publication_date': pub_date,
+                'keywords': '',
+                'abstract': '',
+                'author_order': 1,
+            })
+        return results
+    except Exception:
+        return []
 
 def get_new_papers_count(since_date):
     return Publication.objects.filter(publication_date__gt=since_date).count()
