@@ -1,0 +1,14 @@
+<h1>Authors and Multi-Group Paper Counts by Research Group</h1>
+{% for group, authors in data.items %}
+  <h2>{{ group }}</h2>
+  {% if authors %}
+    <ul>
+      {% for author, count in authors.items %}
+        <li>{{ author }}: {{ count }}</li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No authors with multi-group papers.</p>
+  {% endif %}
+{% endfor %}
+<a href="{% url 'index' %}">Back to Dashboard</a> 

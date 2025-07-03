@@ -1,0 +1,13 @@
+<h1>Keyword Counts</h1>
+<form method="get">
+  <label for="since">Since date (YYYY-MM-DD):</label>
+  <input type="text" name="since" id="since" value="{{ since|default:'' }}">
+  <button type="submit">Show</button>
+</form>
+<table border="1">
+  <tr><th>Keyword</th><th>Count</th></tr>
+  {% for kw, count in keywords.items %}
+    <tr><td>{{ kw }}</td><td>{{ count }}</td></tr>
+  {% endfor %}
+</table>
+<a href="{% url 'index' %}">Back to Dashboard</a> 

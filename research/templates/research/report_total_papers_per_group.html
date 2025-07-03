@@ -1,0 +1,8 @@
+<h1>Total Papers Per Research Group</h1>
+<table border="1">
+  <tr><th>Research Group</th><th>Total Papers</th></tr>
+  {% for group, count in data.items %}
+    <tr><td>{{ group }}</td><td>{{ count }}</td></tr>
+  {% endfor %}
+</table>
+<a href="{% url 'index' %}">Back to Dashboard</a> 

@@ -1,0 +1,15 @@
+<h1>Keyword Counts Per Research Group</h1>
+{% for group, keywords in data.items %}
+  <h2>{{ group }}</h2>
+  {% if keywords %}
+    <table border="1">
+      <tr><th>Keyword</th><th>Count</th></tr>
+      {% for kw, count in keywords.items %}
+        <tr><td>{{ kw }}</td><td>{{ count }}</td></tr>
+      {% endfor %}
+    </table>
+  {% else %}
+    <p>No keywords found.</p>
+  {% endif %}
+{% endfor %}
+<a href="{% url 'index' %}">Back to Dashboard</a> 

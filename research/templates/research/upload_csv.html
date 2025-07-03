@@ -1,0 +1,14 @@
+<h1>Upload CSV</h1>
+{% if messages %}
+  <ul>
+    {% for message in messages %}
+      <li>{{ message }}</li>
+    {% endfor %}
+  </ul>
+{% endif %}
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit">Upload</button>
+</form>
+<a href="{% url 'index' %}">Back to Dashboard</a> 

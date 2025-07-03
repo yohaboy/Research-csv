@@ -1,0 +1,10 @@
+<h1>New Papers Since Date</h1>
+<form method="get">
+  <label for="since">Since date (YYYY-MM-DD):</label>
+  <input type="text" name="since" id="since" value="{{ since|default:'' }}">
+  <button type="submit">Show</button>
+</form>
+{% if count is not None %}
+  <p>Number of new papers since {{ since }}: <strong>{{ count }}</strong></p>
+{% endif %}
+<a href="{% url 'index' %}">Back to Dashboard</a> 
