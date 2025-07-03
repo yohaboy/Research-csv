@@ -65,12 +65,17 @@ def upload_csv(request):
                 io_string = io.StringIO(data)
                 reader = csv.DictReader(io_string)
                 for row in reader:
-                    first = row.get('First name', '').strip()
-                    last = row.get('Last name', '').strip()
-                    group = row.get('Research group', '').strip()
-                    scopus = row.get('Scopus ID', '').strip()
-                    scholar = row.get('Google Scholar ID', '').strip()
-                    orcid = row.get('Orcid ID', '').strip()
+                    first = row.get('firstName', '').strip()
+                    last = row.get('lastName', '').strip()
+                    group = row.get('group', '').strip()
+                    scopus = row.get('scopus', '').strip()
+                    scholar = row.get('scholar', '').strip()
+                    orcid = row.get('orcid', '').strip()
+                    
+                    #debugging 
+                    
+                    print(f"name : {first} {last} , group :{group}")
+
                     if not (first and last and group):
                         continue
                     group_obj, _ = ResearchGroup.objects.get_or_create(name=group)
