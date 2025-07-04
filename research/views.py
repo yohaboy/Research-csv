@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 from django.db.models import Count, Q, F
 from django.urls import reverse
 import json
+from .tasks import fetch_publications_task
 
 class CSVUploadForm(forms.Form):
     csv_file = forms.FileField()
@@ -149,7 +150,7 @@ def query_scopus_api(scopus_id, since_date):
     Query the Elsevier Scopus API for publications by author ID since a given date.
     Returns a list of dicts: title, publication_date, keywords, abstract, author_order.
     """
-    API_KEY = 'YOUR_SCOPUS_API_KEY'  # <-- Replace with your real key
+    API_KEY = 'eff41c02e7bb9b369a0e5b5336f8ae23'
     headers = {
         'Accept': 'application/json',
         'X-ELS-APIKey': API_KEY,
@@ -388,3 +389,8 @@ def report_total_papers_per_group(request):
 def report_keyword_counts_per_group(request):
     data = get_keyword_counts_per_group()
     return render(request, 'research/report_keyword_counts_per_group.html', {'data': data})
+
+def trigger_fetch_publications(request):
+    fetch_publications_task.delay()
+    messages.success(request, "Background publication fetch started!")
+    return redirect('index')
