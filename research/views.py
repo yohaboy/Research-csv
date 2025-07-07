@@ -7,6 +7,7 @@ import requests
 from research.models import Author, ResearchGroup, Publication, AuthorPublication
 from urllib.parse import quote
 from html.parser import HTMLParser
+from urllib.parse import urlparse, parse_qs
 from datetime import datetime, timedelta
 from django.db.models import Count, Q, F
 from django.urls import reverse
@@ -24,18 +25,40 @@ class StaffIDScraper(HTMLParser):
         self.orcid_id = None
 
     def handle_starttag(self, tag, attrs):
+        if tag != 'a':
+            return
+
         attrs = dict(attrs)
-        if tag == 'a':
-            href = attrs.get('href', '')
-            if href and 'scopus.com' in href:
-                self.scopus_id = href.split('authorId=')[-1]
-            if href and 'scholar.google.com' in href:
-                self.scholar_id = href.split('user=')[-1].split('&')[0]
-            if href and 'orcid.org' in href:
-                self.orcid_id = href.split('orcid.org/')[-1].split('/')[0]
+        href = attrs.get('href')
+        if not href:
+            return
+
+        parsed_url = urlparse(href)
+
+        # Scopus
+        if 'scopus.com' in parsed_url.netloc:
+            qs = parse_qs(parsed_url.query)
+            author_id = qs.get('authorId')
+            if author_id:
+                self.scopus_id = author_id[0]
+
+        # Google Scholar
+        elif 'scholar.google.com' in parsed_url.netloc:
+            qs = parse_qs(parsed_url.query)
+            user_id = qs.get('user')
+            if user_id:
+                self.scholar_id = user_id[0]
+
+        # ORCID
+        elif 'orcid.org' in parsed_url.netloc:
+            # ORCID iDs are in the path
+            path_parts = parsed_url.path.strip('/').split('/')
+            if path_parts:
+                self.orcid_id = path_parts[0]
 
     def error(self, message):
         pass
+
 
 def robust_scrape_staff_ids(staff_url, scopus_id, scholar_id, orcid_id):
     """Scrape staff page for missing IDs, robust to structure changes."""
@@ -106,15 +129,16 @@ def upload_csv(request):
 # --- API Querying and Publication Storage ---
 def fetch_and_store_publications_for_author(author, since_date):
     publications = []
-    # Query Scopus
+
     if author.scopus_id:
         publications += query_scopus_api(author.scopus_id, since_date)
-    # Query Google Scholar
+
     if author.scholar_id:
         publications += query_scholar_api(author.scholar_id, since_date)
-    # Query OrcID
+
     if author.orcid_id:
         publications += query_orcid_api(author.orcid_id, since_date)
+        
     # Store publications and author-publication relationships
     for pub in publications:
         pub_obj, created = Publication.objects.get_or_create(
@@ -125,7 +149,6 @@ def fetch_and_store_publications_for_author(author, since_date):
                 'abstract': pub.get('abstract', ''),
             }
         )
-        # Add author-publication relationship
         AuthorPublication.objects.get_or_create(
             author=author,
             publication=pub_obj,
@@ -136,54 +159,105 @@ def fetch_and_store_all_publications(since_date):
     for author in Author.objects.all():
         fetch_and_store_publications_for_author(author, since_date)
 
-# Example stub publication data for API stubs
-example_publication = {
-    'title': 'Sample Paper',
-    'publication_date': datetime.now().date(),
-    'keywords': 'example, test',
-    'abstract': 'This is a sample abstract.',
-    'author_order': 1,
+API_KEY = 'eff41c02e7bb9b369a0e5b5336f8ae23'
+HEADERS = {
+    'Accept': 'application/json',
+    'X-ELS-APIKey': API_KEY,
 }
 
-def query_scopus_api(scopus_id, since_date):
-    """
-    Query the Elsevier Scopus API for publications by author ID since a given date.
-    Returns a list of dicts: title, publication_date, keywords, abstract, author_order.
-    """
-    API_KEY = 'eff41c02e7bb9b369a0e5b5336f8ae23'
-    headers = {
-        'Accept': 'application/json',
-        'X-ELS-APIKey': API_KEY,
-    }
-    url = f'https://api.elsevier.com/content/search/scopus?query=AU-ID({scopus_id})&date={since_date.year}'
+def search_scopus_pubs(scopus_author_id, since_date, start=0, count=25):
+    query = f"AU-ID({scopus_author_id}) AND PUBYEAR > {since_date.year - 1}"
+    url = f"https://api.elsevier.com/content/search/scopus?query={query}&count={count}&start={start}"
+
     try:
-        resp = requests.get(url, headers=headers, timeout=10)
+        resp = requests.get(url, headers=HEADERS, timeout=10)
         if resp.status_code != 200:
-            return []
+            print("Search API error:", resp.text)
+            return [], 0
+
         data = resp.json()
-        results = []
-        for entry in data.get('search-results', {}).get('entry', []):
-            title = entry.get('dc:title', '')
-            date_str = entry.get('prism:coverDate', '')
+        entries = data.get('search-results', {}).get('entry', [])
+        total = int(data.get('search-results', {}).get('opensearch:totalResults', '0'))
+        return entries, total
+
+    except Exception as e:
+        print("Search API Exception:", e)
+        return [], 0
+
+def fetch_abstract_details(doc_scopus_id):
+    url = f"https://api.elsevier.com/content/abstract/scopus_id/{doc_scopus_id}"
+
+    try:
+        resp = requests.get(url, headers=HEADERS, timeout=10)
+        if resp.status_code != 200:
+            print(f"Abstract API error for {doc_scopus_id}:", resp.text)
+            return {}
+
+        data = resp.json()
+        coredata = data.get('abstracts-retrieval-response', {}).get('coredata', {})
+        authors = data.get('abstracts-retrieval-response', {}).get('authors', {}).get('author', [])
+
+        abstract = coredata.get('dc:description', '')
+        keywords_raw = data.get('abstracts-retrieval-response', {}).get('authkeywords', {}).get('author-keyword', [])
+        keywords = [kw.get('$', '') for kw in keywords_raw] if keywords_raw else []
+
+        return {
+            'title': coredata.get('dc:title', ''),
+            'publication_date': coredata.get('prism:coverDate', ''),
+            'abstract': abstract,
+            'keywords': keywords,
+            'authors': authors,
+        }
+    except Exception as e:
+        print(f"Abstract API Exception for {doc_scopus_id}:", e)
+        return {}
+
+def query_scopus_api(scopus_id, since_date):
+    all_results = []
+    start = 0
+    count = 25
+    total_results = None
+
+    while True:
+        entries, total = search_scopus_pubs(scopus_id, since_date, start=start, count=count)
+        if not entries:
+            break
+
+        if total_results is None:
+            total_results = total
+            print(f"Total results to fetch: {total_results}")
+
+        for pub in entries:
+            dc_id = pub.get('dc:identifier', '')
+            if not dc_id.startswith('SCOPUS_ID:'):
+                continue
+            doc_id = dc_id.split(':')[1]
+
+            details = fetch_abstract_details(doc_id)
+
+            pub_date_str = details.get('publication_date', '')
             try:
-                pub_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+                pub_date = datetime.strptime(pub_date_str, '%Y-%m-%d').date()
             except Exception:
+                pub_date = None
+
+            if not pub_date or pub_date < since_date:
                 continue
-            if pub_date < since_date:
-                continue
-            keywords = entry.get('authkeywords', '')
-            abstract = entry.get('dc:description', '')
-            # Author order not available in this endpoint
-            results.append({
-                'title': title,
+
+            all_results.append({
+                'title': details.get('title', ''),
                 'publication_date': pub_date,
-                'keywords': keywords,
-                'abstract': abstract,
-                'author_order': 1,
+                'keywords': details.get('keywords', []),
+                'abstract': details.get('abstract', ''),
+                'authors': details.get('authors', []),
             })
-        return results
-    except Exception:
-        return []
+
+        start += count
+        if start >= total_results:
+            break
+
+    return all_results
+
 
 def query_scholar_api(scholar_id, since_date):
     """
