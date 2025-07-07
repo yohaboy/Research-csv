@@ -295,30 +295,56 @@ def query_scholar_api(scholar_id, since_date):
         print(f"Error scraping Google Scholar profile: {e}")
         return []
     
-    
 def query_orcid_api(orcid_id, since_date):
     url = f'https://pub.orcid.org/v3.0/{orcid_id}/works'
     headers = {'Accept': 'application/json'}
+
     try:
         resp = requests.get(url, headers=headers, timeout=10)
         if resp.status_code != 200:
             return []
+
         data = resp.json()
         results = []
+
         for group in data.get('group', []):
-            work = group.get('work-summary', [{}])[0]
-            title = work.get('title', {}).get('title', {}).get('value', '')
-            date_parts = work.get('publication-date', {})
-            year = int(date_parts.get('year', {}).get('value', 0) or 0)
-            month = int(date_parts.get('month', {}).get('value', 1) or 1)
-            day = int(date_parts.get('day', {}).get('value', 1) or 1)
+            work_summary = group.get('work-summary', [])
+            if not work_summary:
+                continue
+
+            work = work_summary[0]
+
+            title = (
+                work.get('title', {})
+                    .get('title', {})
+                    .get('value', '')
+                    .strip()
+            )
+
+            date_parts = work.get('publication-date')
+            if not date_parts:
+                continue
+
+            year = date_parts.get('year')
+            month = date_parts.get('month')
+            day = date_parts.get('day')
+
+            year_value = year.get('value') if year else None
+            month_value = month.get('value') if month else None
+            day_value = day.get('value') if day else None
+
+            # Fallsback to Jan 1 if month/day missing, 0 year if no year
             try:
-                pub_date = datetime(year, month, day).date()
+                pub_year = int(year_value) if year_value else 0
+                pub_month = int(month_value) if month_value else 1
+                pub_day = int(day_value) if day_value else 1
+                pub_date = datetime(pub_year, pub_month, pub_day).date()
             except Exception:
                 continue
+
             if pub_date < since_date:
                 continue
-            # OrcID does not provide keywords/abstract in summary
+
             results.append({
                 'title': title,
                 'publication_date': pub_date,
@@ -326,9 +352,12 @@ def query_orcid_api(orcid_id, since_date):
                 'abstract': '',
                 'author_order': 1,
             })
+
         return results
+
     except Exception:
         return []
+
 
 def get_new_papers_count(since_date):
     return Publication.objects.filter(publication_date__gt=since_date).count()
