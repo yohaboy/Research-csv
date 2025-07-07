@@ -1,3 +1,5 @@
+import re
+from bs4 import BeautifulSoup
 from django.shortcuts import render, redirect
 from django import forms
 from django.contrib import messages
@@ -13,6 +15,7 @@ from django.db.models import Count, Q, F
 from django.urls import reverse
 import json
 from .tasks import fetch_publications_task
+from scholarly import scholarly
 
 class CSVUploadForm(forms.Form):
     csv_file = forms.FileField()
@@ -138,7 +141,7 @@ def fetch_and_store_publications_for_author(author, since_date):
 
     if author.orcid_id:
         publications += query_orcid_api(author.orcid_id, since_date)
-        
+
     # Store publications and author-publication relationships
     for pub in publications:
         pub_obj, created = Publication.objects.get_or_create(
@@ -260,65 +263,35 @@ def query_scopus_api(scopus_id, since_date):
 
 
 def query_scholar_api(scholar_id, since_date):
-    """
-    Scrape Google Scholar profile for publications since a given date.
-    Returns a list of dicts: title, publication_date, keywords, abstract, author_order.
-    """
-    url = f'https://scholar.google.com/citations?user={scholar_id}&hl=en'
     try:
-        resp = requests.get(url, timeout=10)
-        if resp.status_code != 200:
-            return []
-        html = resp.text
-        # Very basic parsing: look for publication rows
-        from html.parser import HTMLParser
-        class ScholarPubParser(HTMLParser):
-            def __init__(self):
-                super().__init__()
-                self.in_title = False
-                self.in_year = False
-                self.current_title = ''
-                self.current_year = ''
-                self.pubs = []
-            def handle_starttag(self, tag, attrs):
-                attrs = dict(attrs)
-                if tag == 'a' and attrs.get('class', '') == 'gsc_a_at':
-                    self.in_title = True
-                if tag == 'span' and attrs.get('class', '') == 'gsc_a_h gsc_a_hc gs_ibl':
-                    self.in_year = True
-            def handle_endtag(self, tag):
-                if self.in_title and tag == 'a':
-                    self.in_title = False
-                if self.in_year and tag == 'span':
-                    self.in_year = False
-            def handle_data(self, data):
-                if self.in_title:
-                    self.current_title = data.strip()
-                if self.in_year:
-                    self.current_year = data.strip()
-                    if self.current_title and self.current_year.isdigit():
-                        year = int(self.current_year)
-                        if year >= since_date.year:
-                            self.pubs.append({
-                                'title': self.current_title,
-                                'publication_date': datetime(year, 1, 1).date(),
-                                'keywords': '',
-                                'abstract': '',
-                                'author_order': 1,
-                            })
-                        self.current_title = ''
-                        self.current_year = ''
-        parser = ScholarPubParser()
-        parser.feed(html)
-        return parser.pubs
-    except Exception:
+        author = scholarly.search_author_id(scholar_id)
+        author_filled = scholarly.fill(author)
+        publications = []
+        for pub in author_filled.get('publications', []):
+            pub_filled = scholarly.fill(pub)
+            bib = pub_filled.get('bib', {})
+            title = bib.get('title', '')
+            year = bib.get('year', '')
+            try:
+                year_int = int(year)
+            except Exception:
+                continue
+            if year_int >= since_date.year:
+                abstract = bib.get('abstract', '')
+                keywords = ', '.join(bib.get('keywords', [])) if 'keywords' in bib else ''
+                publications.append({
+                    'title': title,
+                    'publication_date': datetime(year_int, 1, 1).date(),
+                    'keywords': keywords,
+                    'abstract': abstract,
+                    'author_order': 1,
+                })
+        return publications
+    except Exception as e:
+        print(f"Error scraping Google Scholar profile: {e}")
         return []
 
 def query_orcid_api(orcid_id, since_date):
-    """
-    Query the public OrcID API for works since a given date.
-    Returns a list of dicts: title, publication_date, keywords, abstract, author_order.
-    """
     url = f'https://pub.orcid.org/v3.0/{orcid_id}/works'
     headers = {'Accept': 'application/json'}
     try:
