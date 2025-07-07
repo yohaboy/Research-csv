@@ -27,13 +27,19 @@ A comprehensive Django-based research management system designed to track and an
 - Per-group publication counts and trends
 - Author collaboration patterns
 
+## 🖥️ Modern Professional UI
+
+- All pages use modern Django templates with internal CSS for a clean, professional look
+- Consistent card-based layouts, styled tables, forms, and buttons
+- No external CSS frameworks required
+
 ## 🛠️ Technology Stack
 
-- **Backend**: Django 4.2.20
+- **Backend**: Django 4.2.x
 - **Database**: SQLite (development) / PostgreSQL (production)
 - **Task Queue**: Celery with Redis
 - **APIs**: Scopus, Google Scholar, ORCID
-- **Frontend**: Django Templates with Bootstrap
+- **Frontend**: Django Templates with internal CSS
 
 ## 📋 Prerequisites
 
@@ -48,7 +54,7 @@ A comprehensive Django-based research management system designed to track and an
 
 ```bash
 git clone <repository-url>
-cd unisa_research
+cd Freelance
 ```
 
 ### 2. Create Virtual Environment
@@ -61,10 +67,7 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 ### 3. Install Dependencies
 
 ```bash
-pip install django
-pip install celery
-pip install redis
-pip install requests
+pip install -r requirements.txt
 ```
 
 ### 4. Set Up Environment Variables
@@ -177,15 +180,11 @@ CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
 ### Common Issues
 
 1. **Celery Worker Not Starting**
-
    - Ensure Redis server is running
    - Check Redis connection settings
-
 2. **API Rate Limits**
-
    - Implement request throttling
    - Use background tasks for large datasets
-
 3. **Database Errors**
    - Run `python manage.py makemigrations`
    - Run `python manage.py migrate`

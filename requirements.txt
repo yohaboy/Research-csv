@@ -1,0 +1,6 @@
+Django>=4.2,<5.0
+celery>=5.2
+redis>=4.0
+requests>=2.25
+beautifulsoup4>=4.9
+scholarly>=1.7.11

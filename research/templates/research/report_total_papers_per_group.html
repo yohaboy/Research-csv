@@ -1,8 +1,83 @@
-<h1>Total Papers Per Research Group</h1>
-<table border="1">
-  <tr><th>Research Group</th><th>Total Papers</th></tr>
-  {% for group, count in data.items %}
-    <tr><td>{{ group }}</td><td>{{ count }}</td></tr>
-  {% endfor %}
-</table>
-<a href="{% url 'index' %}">Back to Dashboard</a> 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Total Papers Per Research Group</title>
+  <style>
+    body {
+      background: #f4f6fb;
+      font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 480px;
+      margin: 60px auto;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+      padding: 32px 24px 24px 24px;
+    }
+    h1 {
+      text-align: center;
+      color: #2d3a4b;
+      margin-bottom: 28px;
+      font-size: 1.4rem;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      background: #f9fafb;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    }
+    th, td {
+      padding: 10px 12px;
+      text-align: left;
+    }
+    th {
+      background: #2563eb;
+      color: #fff;
+      font-weight: 600;
+    }
+    tr:nth-child(even) td {
+      background: #e0e7ef;
+    }
+    tr:nth-child(odd) td {
+      background: #f9fafb;
+    }
+    .back-link {
+      display: block;
+      margin: 24px auto 0 auto;
+      text-align: center;
+      background: #e5e7eb;
+      color: #374151;
+      text-decoration: none;
+      padding: 10px 0;
+      border-radius: 8px;
+      width: 100%;
+      font-size: 1rem;
+      transition: background 0.18s;
+    }
+    .back-link:hover {
+      background: #cbd5e1;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Total Papers Per Research Group</h1>
+    <table>
+      <tr><th>Research Group</th><th>Total Papers</th></tr>
+      {% for group, count in data.items %}
+        <tr><td>{{ group }}</td><td>{{ count }}</td></tr>
+      {% endfor %}
+    </table>
+    <a class="back-link" href="{% url 'index' %}">Back to Dashboard</a>
+  </div>
+</body>
+</html> 
