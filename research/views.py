@@ -267,15 +267,18 @@ def query_scholar_api(scholar_id, since_date):
         author = scholarly.search_author_id(scholar_id)
         author_filled = scholarly.fill(author)
         publications = []
-        for pub in author_filled.get('publications', []):
+        pubs = author_filled.get('publications', [])
+
+        for pub in pubs:
             pub_filled = scholarly.fill(pub)
             bib = pub_filled.get('bib', {})
             title = bib.get('title', '')
-            year = bib.get('year', '')
+            year = bib.get('pub_year', '')
             try:
                 year_int = int(year)
             except Exception:
                 continue
+
             if year_int >= since_date.year:
                 abstract = bib.get('abstract', '')
                 keywords = ', '.join(bib.get('keywords', [])) if 'keywords' in bib else ''
@@ -287,10 +290,12 @@ def query_scholar_api(scholar_id, since_date):
                     'author_order': 1,
                 })
         return publications
+
     except Exception as e:
         print(f"Error scraping Google Scholar profile: {e}")
         return []
-
+    
+    
 def query_orcid_api(orcid_id, since_date):
     url = f'https://pub.orcid.org/v3.0/{orcid_id}/works'
     headers = {'Accept': 'application/json'}
