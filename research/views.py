@@ -109,7 +109,6 @@ def upload_csv(request):
         form = CSVUploadForm()
     return render(request, 'research/upload_csv.html', {'form': form})
 
-# New endpoint to check task status
 @csrf_exempt
 def check_csv_task_status(request):
     task_id = request.GET.get('task_id')
@@ -139,7 +138,6 @@ def fetch_and_store_publications_for_author(author, since_date):
         if not title or not pub_year:
             continue
         key = (title, pub_year)
-        # Only keep the first occurrence
         if key not in unique_pubs:
             unique_pubs[key] = pub
 
@@ -229,8 +227,7 @@ def query_scopus_api(scopus_id, since_date):
 
         if total_results is None:
             total_results = total
-            print(f"Total results to fetch: {total_results}")
-
+            
         for pub in entries:
             dc_id = pub.get('dc:identifier', '')
             if not dc_id.startswith('SCOPUS_ID:'):
