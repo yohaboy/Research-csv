@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from research.views import check_csv_task_status
 
 urlpatterns = [
     path('', views.index, name='index'),
@@ -11,4 +12,5 @@ urlpatterns = [
     path('report/total-papers-per-group/', views.report_total_papers_per_group, name='report_total_papers_per_group'),
     path('report/keyword-counts-per-group/', views.report_keyword_counts_per_group, name='report_keyword_counts_per_group'),
     path('fetch-publications/', views.trigger_fetch_publications, name='fetch_publications'),
+    path('check_csv_task_status/', check_csv_task_status, name='check_csv_task_status'),
 ] 

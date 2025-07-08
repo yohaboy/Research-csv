@@ -89,9 +89,60 @@
     <form method="post" enctype="multipart/form-data">
       {% csrf_token %}
       {{ form.as_p }}
-      <button type="submit">Upload</button>
+      <button type="submit">Process CSV</button>
     </form>
+    <div id="csv-status"></div>
     <a class="back-link" href="{% url 'index' %}">Back to Dashboard</a>
   </div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const form = document.querySelector('form');
+  const statusDiv = document.getElementById('csv-status');
+  let pollInterval = null;
+
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    statusDiv.textContent = '';
+    const formData = new FormData(form);
+    fetch('', {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.error) {
+        statusDiv.textContent = data.error;
+        return;
+      }
+      statusDiv.textContent = data.message;
+      pollTaskStatus(data.task_id);
+    })
+    .catch(err => {
+      statusDiv.textContent = 'Error starting processing.';
+    });
+  });
+
+  function pollTaskStatus(taskId) {
+    if (pollInterval) clearInterval(pollInterval);
+    pollInterval = setInterval(() => {
+      fetch(`/check_csv_task_status/?task_id=${taskId}`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.ready) {
+            clearInterval(pollInterval);
+            statusDiv.textContent = 'Processing finished!';
+          }
+        })
+        .catch(() => {
+          clearInterval(pollInterval);
+          statusDiv.textContent = 'Error checking task status.';
+        });
+    }, 2000);
+  }
+});
+</script>
 </body>
 </html> 

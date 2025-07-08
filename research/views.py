@@ -14,8 +14,10 @@ from datetime import datetime, timedelta
 from django.db.models import Count, Q, F
 from django.urls import reverse
 import json
-from .tasks import fetch_publications_task
 from scholarly import scholarly
+from django.http import JsonResponse
+from celery.result import AsyncResult
+from django.views.decorators.csrf import csrf_exempt
 
 class CSVUploadForm(forms.Form):
     csv_file = forms.FileField()
@@ -86,48 +88,35 @@ def upload_csv(request):
         if form.is_valid():
             csv_file = form.cleaned_data['csv_file']
             if not csv_file.name.endswith('.csv'):
+                if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                    return JsonResponse({'error': 'File is not CSV type'}, status=400)
                 messages.error(request, 'File is not CSV type')
                 return redirect('upload_csv')
             try:
                 data = csv_file.read().decode('utf-8')
-                io_string = io.StringIO(data)
-                reader = csv.DictReader(io_string)
-                for row in reader:
-                    first = row.get('firstName', '').strip()
-                    last = row.get('lastName', '').strip()
-                    group = row.get('group', '').strip()
-                    scopus = row.get('scopus', '').strip()
-                    scholar = row.get('scholar', '').strip()
-                    orcid = row.get('orcid', '').strip()
-                    
-                    #debugging 
-                    
-                    print(f"name : {first} {last} , group :{group}")
-
-                    if not (first and last and group):
-                        continue
-                    group_obj, _ = ResearchGroup.objects.get_or_create(name=group)
-                    staff_url = f'https://people.unisa.edu.au/{quote(first)}.{quote(last)}'
-                    scopus, scholar, orcid = robust_scrape_staff_ids(staff_url, scopus, scholar, orcid)
-                    Author.objects.update_or_create(
-                        first_name=first,
-                        last_name=last,
-                        research_group=group_obj,
-                        defaults={
-                            'scopus_id': scopus,
-                            'scholar_id': scholar,
-                            'orcid_id': orcid,
-                            'staff_url': staff_url
-                        }
-                    )
-                messages.success(request, 'CSV processed successfully!')
+                from research.tasks import process_csv_upload
+                task = process_csv_upload.delay(data)
+                if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                    return JsonResponse({'task_id': task.id, 'message': 'CSV processing started.'})
+                messages.success(request, 'CSV upload started! The data will be processed in the background.')
                 return redirect('upload_csv')
             except Exception as e:
+                if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                    return JsonResponse({'error': str(e)}, status=500)
                 messages.error(request, f'Error processing file: {e}')
                 return redirect('upload_csv')
     else:
         form = CSVUploadForm()
     return render(request, 'research/upload_csv.html', {'form': form})
+
+# New endpoint to check task status
+@csrf_exempt
+def check_csv_task_status(request):
+    task_id = request.GET.get('task_id')
+    if not task_id:
+        return JsonResponse({'error': 'No task_id provided'}, status=400)
+    result = AsyncResult(task_id)
+    return JsonResponse({'task_id': task_id, 'status': result.status, 'ready': result.ready()})
 
 # --- API Querying and Publication Storage ---
 def fetch_and_store_publications_for_author(author, since_date):
@@ -142,8 +131,20 @@ def fetch_and_store_publications_for_author(author, since_date):
     if author.orcid_id:
         publications += query_orcid_api(author.orcid_id, since_date)
 
-    # Store publications and author-publication relationships
+    # Deduplicate by (title, publication year)
+    unique_pubs = {}
     for pub in publications:
+        title = pub['title'].strip().lower()
+        pub_year = pub['publication_date'].year if pub['publication_date'] else None
+        if not title or not pub_year:
+            continue
+        key = (title, pub_year)
+        # Only keep the first occurrence
+        if key not in unique_pubs:
+            unique_pubs[key] = pub
+
+    # Store publications and author-publication relationships
+    for pub in unique_pubs.values():
         pub_obj, created = Publication.objects.get_or_create(
             title=pub['title'],
             publication_date=pub['publication_date'],
@@ -472,6 +473,7 @@ def report_keyword_counts_per_group(request):
     return render(request, 'research/report_keyword_counts_per_group.html', {'data': data})
 
 def trigger_fetch_publications(request):
+    from .tasks import fetch_publications_task
     fetch_publications_task.delay()
     messages.success(request, "Background publication fetch started!")
     return redirect('index')
