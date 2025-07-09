@@ -223,3 +223,24 @@ For support and questions:
 ---
 
 **Note**: This system is designed for academic research tracking and should be used in compliance with the terms of service of all integrated APIs.
+
+## 🚀 Parallelized Background Processing
+
+- **Fast Publication Fetching:**
+  - Publication fetching is parallelized per author using Celery group tasks. This allows the system to fetch publications for 100+ authors in a fraction of the time compared to sequential processing.
+  - To maximize speed, increase the number of Celery workers (see below).
+- **Responsive UI:**
+  - Both CSV upload and publication fetching use AJAX and background polling. Users see immediate feedback when a process starts and are notified when it finishes, without blocking the site.
+
+## ⚡ Scaling & Performance Tips
+
+- **Celery Workers:**
+  - For large author sets, run multiple Celery workers to process authors in parallel:
+    ```bash
+    celery -A unisa_research worker --loglevel=info --concurrency=8
+    ```
+    Adjust `--concurrency` to match your server's CPU cores and workload.
+- **Avoid Blocking Calls:**
+  - Never use `result.get()` or `result.join()` inside a Celery task. This can deadlock your workers. Instead, let Celery handle task orchestration and use the result backend to track progress.
+- **API Rate Limits:**
+  - If you hit API rate limits, reduce concurrency or add throttling logic.

@@ -6,3 +6,4 @@ httpx>=0.27.0
 beautifulsoup4>=4.12.0
 scholarly>=1.7.11
 fake-useragent>=1.5.0
+python-dotenv>=1.0.0
