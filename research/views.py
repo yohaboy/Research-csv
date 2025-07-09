@@ -143,11 +143,14 @@ def fetch_and_store_publications_for_author(author, since_date):
 
     # Store publications and author-publication relationships
     for pub in unique_pubs.values():
+        keywords = pub.get('keywords', '')
+        if isinstance(keywords, list):
+            keywords = ', '.join(keywords)
         pub_obj, created = Publication.objects.get_or_create(
             title=pub['title'],
             publication_date=pub['publication_date'],
             defaults={
-                'keywords': pub.get('keywords', ''),
+                'keywords': keywords,
                 'abstract': pub.get('abstract', ''),
             }
         )
