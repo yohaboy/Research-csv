@@ -89,25 +89,6 @@
             {% empty %}
                 <p>No publications found.</p>
             {% endfor %}
-            <h4 class="mt-5">Author-Publication Links</h4>
-            <table class="table table-bordered">
-                <thead>
-                    <tr>
-                        <th>Author</th>
-                        <th>Publication</th>
-                        <th>Order</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for ap in author_publications %}
-                        <tr>
-                            <td>{{ ap.author.first_name }} {{ ap.author.last_name }}</td>
-                            <td>{{ ap.publication.title }}</td>
-                            <td>{{ ap.author_order }}</td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
         </div>
     </div>
 </div>
