@@ -13,4 +13,5 @@ urlpatterns = [
     path('report/keyword-counts-per-group/', views.report_keyword_counts_per_group, name='report_keyword_counts_per_group'),
     path('fetch-publications/', views.trigger_fetch_publications, name='fetch_publications'),
     path('check_csv_task_status/', check_csv_task_status, name='check_csv_task_status'),
+    path('scholar/', views.scholar_dashboard, name='scholar_dashboard'),
 ] 

@@ -477,3 +477,30 @@ def trigger_fetch_publications(request):
     fetch_publications_task.delay()
     messages.success(request, "Background publication fetch started!")
     return redirect('index')
+
+def scholar_dashboard(request):
+    group_id = request.GET.get('group')
+    author_id = request.GET.get('author')
+
+    research_groups = ResearchGroup.objects.all()
+    authors = Author.objects.select_related('research_group').all()
+    publications = Publication.objects.all()
+    author_publications = AuthorPublication.objects.select_related('author', 'publication').all()
+
+    # Apply filters
+    if group_id:
+        authors = authors.filter(research_group_id=group_id)
+        author_publications = author_publications.filter(author__research_group_id=group_id)
+    if author_id:
+        author_publications = author_publications.filter(author_id=author_id)
+        publications = publications.filter(id__in=author_publications.values('publication_id'))
+
+    context = {
+        'research_groups': research_groups,
+        'authors': authors,
+        'publications': publications,
+        'author_publications': author_publications,
+        'selected_group': int(group_id) if group_id else None,
+        'selected_author': int(author_id) if author_id else None,
+    }
+    return render(request, 'research/scholar_dashboard.html', context)
