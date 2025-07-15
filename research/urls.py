@@ -14,4 +14,5 @@ urlpatterns = [
     path('fetch-publications/', views.trigger_fetch_publications, name='fetch_publications'),
     path('check_csv_task_status/', check_csv_task_status, name='check_csv_task_status'),
     path('scholar/', views.scholar_dashboard, name='scholar_dashboard'),
+    path('authors/', views.author_details, name='author_details'),
 ] 

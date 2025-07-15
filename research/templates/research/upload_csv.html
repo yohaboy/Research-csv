@@ -1,148 +1,145 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Upload CSV</title>
-  <style>
-    body {
-      background: #f4f6fb;
-      font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      min-height: 100vh;
-    }
-    .container {
-      max-width: 420px;
-      margin: 60px auto;
-      background: #fff;
-      border-radius: 16px;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
-      padding: 32px 24px 24px 24px;
-    }
-    h1 {
-      text-align: center;
-      color: #2d3a4b;
-      margin-bottom: 28px;
-      font-size: 1.6rem;
-    }
-    ul.messages {
-      list-style: none;
-      padding: 0;
-      margin-bottom: 18px;
-    }
-    ul.messages li {
-      background: #e0f2fe;
-      color: #0369a1;
-      border-radius: 6px;
-      padding: 8px 12px;
-      margin-bottom: 6px;
-      font-size: 1rem;
-    }
-    form {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-    button[type="submit"] {
-      background: #2563eb;
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      padding: 12px 0;
-      font-size: 1.08rem;
-      cursor: pointer;
-      transition: background 0.18s, box-shadow 0.18s;
-      box-shadow: 0 2px 8px rgba(37,99,235,0.06);
-    }
-    button[type="submit"]:hover {
-      background: #1e40af;
-    }
-    .back-link {
-      display: block;
-      margin: 24px auto 0 auto;
-      text-align: center;
-      background: #e5e7eb;
-      color: #374151;
-      text-decoration: none;
-      padding: 10px 0;
-      border-radius: 8px;
-      width: 100%;
-      font-size: 1rem;
-      transition: background 0.18s;
-    }
-    .back-link:hover {
-      background: #cbd5e1;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h1>Upload CSV</h1>
-    {% if messages %}
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Upload CSV</title>
+    <style>
+      body {
+        background: #f4f6fb;
+        font-family: "Segoe UI", "Roboto", Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+      }
+      .container {
+        max-width: 420px;
+        margin: 60px auto;
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+        padding: 32px 24px 24px 24px;
+      }
+      h1 {
+        text-align: center;
+        color: #2d3a4b;
+        margin-bottom: 28px;
+        font-size: 1.6rem;
+      }
+      ul.messages {
+        list-style: none;
+        padding: 0;
+        margin-bottom: 18px;
+      }
+      ul.messages li {
+        background: #e0f2fe;
+        color: #0369a1;
+        border-radius: 6px;
+        padding: 8px 12px;
+        margin-bottom: 6px;
+        font-size: 1rem;
+      }
+      form {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      button[type="submit"] {
+        background: #2563eb;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        padding: 12px 0;
+        font-size: 1.08rem;
+        cursor: pointer;
+        box-shadow: 0 2px 8px rgba(37, 99, 235, 0.06);
+      }
+      button[type="submit"]:hover {
+        background: #1e40af;
+      }
+      .back-link {
+        display: block;
+        margin: 24px auto 0 auto;
+        text-align: center;
+        background: #e5e7eb;
+        color: #374151;
+        text-decoration: none;
+        padding: 10px 0;
+        border-radius: 8px;
+        width: 100%;
+        font-size: 1rem;
+      }
+      .back-link:hover {
+        background: #cbd5e1;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Upload CSV</h1>
+      {% if messages %}
       <ul class="messages">
         {% for message in messages %}
-          <li>{{ message }}</li>
+        <li>{{ message }}</li>
         {% endfor %}
       </ul>
-    {% endif %}
-    <form method="post" enctype="multipart/form-data">
-      {% csrf_token %}
-      {{ form.as_p }}
-      <button type="submit">Process CSV</button>
-    </form>
-    <div id="csv-status"></div>
-    <a class="back-link" href="{% url 'index' %}">Back to Dashboard</a>
-  </div>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  const form = document.querySelector('form');
-  const statusDiv = document.getElementById('csv-status');
-  let pollInterval = null;
+      {% endif %}
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %} {{ form.as_p }}
+        <button type="submit">Process CSV</button>
+      </form>
+      <div id="csv-status"></div>
+      <a class="back-link" href="{% url 'index' %}">Back to Dashboard</a>
+    </div>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const form = document.querySelector("form");
+        const statusDiv = document.getElementById("csv-status");
+        let pollInterval = null;
 
-  form.addEventListener('submit', function(e) {
-    e.preventDefault();
-    statusDiv.textContent = '';
-    const formData = new FormData(form);
-    fetch('', {
-      method: 'POST',
-      body: formData,
-      headers: {
-        'X-Requested-With': 'XMLHttpRequest',
-      },
-    })
-    .then(response => response.json())
-    .then(data => {
-      if (data.error) {
-        statusDiv.textContent = data.error;
-        return;
-      }
-      statusDiv.textContent = data.message;
-      pollTaskStatus(data.task_id);
-    })
-    .catch(err => {
-      statusDiv.textContent = 'Error starting processing.';
-    });
-  });
-
-  function pollTaskStatus(taskId) {
-    if (pollInterval) clearInterval(pollInterval);
-    pollInterval = setInterval(() => {
-      fetch(`/check_csv_task_status/?task_id=${taskId}`)
-        .then(response => response.json())
-        .then(data => {
-          if (data.ready) {
-            clearInterval(pollInterval);
-            statusDiv.textContent = 'Processing finished!';
-          }
-        })
-        .catch(() => {
-          clearInterval(pollInterval);
-          statusDiv.textContent = 'Error checking task status.';
+        form.addEventListener("submit", function (e) {
+          e.preventDefault();
+          statusDiv.textContent = "";
+          const formData = new FormData(form);
+          fetch("", {
+            method: "POST",
+            body: formData,
+            headers: {
+              "X-Requested-With": "XMLHttpRequest",
+            },
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.error) {
+                statusDiv.textContent = data.error;
+                return;
+              }
+              statusDiv.textContent = data.message;
+              pollTaskStatus(data.task_id);
+            })
+            .catch((err) => {
+              statusDiv.textContent = "Error starting processing.";
+            });
         });
-    }, 2000);
-  }
-});
-</script>
-</body>
-</html> 
+
+        function pollTaskStatus(taskId) {
+          if (pollInterval) clearInterval(pollInterval);
+          pollInterval = setInterval(() => {
+            fetch(`/check_csv_task_status/?task_id=${taskId}`)
+              .then((response) => response.json())
+              .then((data) => {
+                if (data.ready) {
+                  clearInterval(pollInterval);
+                  statusDiv.textContent = "Processing finished!";
+                }
+              })
+              .catch(() => {
+                clearInterval(pollInterval);
+                statusDiv.textContent = "Error checking task status.";
+              });
+          }, 2000);
+        }
+      });
+    </script>
+  </body>
+</html>

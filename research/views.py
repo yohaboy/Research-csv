@@ -504,3 +504,19 @@ def scholar_dashboard(request):
         'selected_author': int(author_id) if author_id else None,
     }
     return render(request, 'research/scholar_dashboard.html', context)
+
+def author_details(request):
+    search_query = request.GET.get('search', '')
+    authors = Author.objects.select_related('research_group').all()
+    
+    if search_query:
+        authors = authors.filter(
+            Q(first_name__icontains=search_query) | 
+            Q(last_name__icontains=search_query)
+        )
+    
+    context = {
+        'authors': authors,
+        'search_query': search_query,
+    }
+    return render(request, 'research/author_details.html', context)

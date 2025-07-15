@@ -1,63 +1,65 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Multi-Group Paper Count</title>
-  <style>
-    body {
-      background: #f4f6fb;
-      font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      min-height: 100vh;
-    }
-    .container {
-      max-width: 420px;
-      margin: 60px auto;
-      background: #fff;
-      border-radius: 16px;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
-      padding: 32px 24px 24px 24px;
-      text-align: center;
-    }
-    h1 {
-      color: #2d3a4b;
-      margin-bottom: 28px;
-      font-size: 1.6rem;
-    }
-    .result {
-      background: #e0f2fe;
-      color: #0369a1;
-      border-radius: 6px;
-      padding: 16px 14px;
-      margin-bottom: 10px;
-      font-size: 1.08rem;
-      display: inline-block;
-    }
-    .back-link {
-      display: block;
-      margin: 24px auto 0 auto;
-      text-align: center;
-      background: #e5e7eb;
-      color: #374151;
-      text-decoration: none;
-      padding: 10px 0;
-      border-radius: 8px;
-      width: 100%;
-      font-size: 1rem;
-      transition: background 0.18s;
-    }
-    .back-link:hover {
-      background: #cbd5e1;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h1>Multi-Group Paper Count</h1>
-    <div class="result">Number of papers involving two or more research groups: <strong>{{ count }}</strong></div>
-    <a class="back-link" href="{% url 'index' %}">Back to Dashboard</a>
-  </div>
-</body>
-</html> 
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Multi-Group Paper Count</title>
+    <style>
+      body {
+        background: #f4f6fb;
+        font-family: "Segoe UI", "Roboto", Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+      }
+      .container {
+        max-width: 420px;
+        margin: 60px auto;
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+        padding: 32px 24px 24px 24px;
+        text-align: center;
+      }
+      h1 {
+        color: #2d3a4b;
+        margin-bottom: 28px;
+        font-size: 1.6rem;
+      }
+      .result {
+        background: #e0f2fe;
+        color: #0369a1;
+        border-radius: 6px;
+        padding: 16px 14px;
+        margin-bottom: 10px;
+        font-size: 1.08rem;
+        display: inline-block;
+      }
+      .back-link {
+        display: block;
+        margin: 24px auto 0 auto;
+        text-align: center;
+        background: #e5e7eb;
+        color: #374151;
+        text-decoration: none;
+        padding: 10px 0;
+        border-radius: 8px;
+        width: 100%;
+        font-size: 1rem;
+      }
+      .back-link:hover {
+        background: #cbd5e1;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Multi-Group Paper Count</h1>
+      <div class="result">
+        Number of papers involving two or more research groups:
+        <strong>{{ count }}</strong>
+      </div>
+      <a class="back-link" href="{% url 'index' %}">Back to Dashboard</a>
+    </div>
+  </body>
+</html>
