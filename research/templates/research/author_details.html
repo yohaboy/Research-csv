@@ -9,6 +9,24 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
     <style>
         body { background: #f4f6fb; font-family: 'Segoe UI', 'Roboto', Arial, sans-serif; }
+        .navbar {
+            background: #fff;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 1rem 0;
+        }
+        .navbar-brand {
+            font-weight: 600;
+            color: #1e40af !important;
+            font-size: 1.5rem;
+        }
+        .nav-link {
+            color: #6b7280 !important;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: #1e40af !important;
+        }
         .container { max-width: 1200px; margin: 40px auto; background: #fff; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); padding: 32px 24px; }
         h1 { color: #2d3a4b; margin-bottom: 32px; font-size: 2.2rem; letter-spacing: 0.5px; }
         .search-container { background: #f8f9fa; border-radius: 12px; padding: 24px; margin-bottom: 32px; }
@@ -25,89 +43,122 @@
     </style>
 </head>
 <body>
-<div class="container">
-    <h1 class="mb-4">Author Details</h1>
-    
-    <div class="search-container">
-        <form method="get" class="row g-3">
-            <div class="col-md-8">
-                <label for="search" class="form-label">Search Authors</label>
-                <input type="text" class="form-control search-input" id="search" name="search" 
-                       value="{{ search_query }}" placeholder="Search by first name or last name...">
-            </div>
-            <div class="col-md-4 d-flex align-items-end">
-                <button type="submit" class="btn btn-primary w-100">
-                    <i class="bi bi-search"></i> Search
-                </button>
-            </div>
-        </form>
-    </div>
-
-    <div class="row">
-        {% for author in authors %}
-        <div class="col-md-6 col-lg-4 mb-4">
-            <div class="card author-card h-100">
-                <div class="card-body">
-                    <h5 class="card-title author-name">{{ author.first_name }} {{ author.last_name }}</h5>
-                    <p class="card-text research-group">
-                        <i class="bi bi-building"></i> {{ author.research_group.name }}
-                    </p>
-                    
-                    <div class="mb-3">
-                        <strong>Research IDs:</strong><br>
-                        {% if author.scopus_id %}
-                            <span class="id-badge has-value">
-                                <i class="bi bi-journal-text"></i> Scopus: {{ author.scopus_id }}
-                            </span>
-                        {% else %}
-                            <span class="id-badge">Scopus: Not available</span>
-                        {% endif %}
-                        <br>
-                        
-                        {% if author.scholar_id %}
-                            <span class="id-badge has-value">
-                                <i class="bi bi-google"></i> Scholar: {{ author.scholar_id }}
-                            </span>
-                        {% else %}
-                            <span class="id-badge">Scholar: Not available</span>
-                        {% endif %}
-                        <br>
-                        
-                        {% if author.orcid_id %}
-                            <span class="id-badge has-value">
-                                <i class="bi bi-person-badge"></i> ORCID: {{ author.orcid_id }}
-                            </span>
-                        {% else %}
-                            <span class="id-badge">ORCID: Not available</span>
-                        {% endif %}
-                    </div>
-                    
-                    {% if author.staff_url %}
-                    <div class="mt-auto">
-                        <a href="{{ author.staff_url }}" target="_blank" class="staff-link">
-                            <i class="bi bi-link-45deg"></i> Staff Profile
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg">
+        <div class="container-fluid px-4">
+            <a class="navbar-brand" href="{% url 'index' %}">
+                <i class="bi bi-graph-up"></i> Research Dashboard
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'index' %}">
+                            <i class="bi bi-house"></i> Home
                         </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'scholar_dashboard' %}">
+                            <i class="bi bi-journal-text"></i> Scholar Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{% url 'author_details' %}">
+                            <i class="bi bi-people"></i> Author Details
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1 class="mb-4">Author Details</h1>
+        
+        <div class="search-container">
+            <form method="get" class="row g-3">
+                <div class="col-md-8">
+                    <label for="search" class="form-label">Search Authors</label>
+                    <input type="text" class="form-control search-input" id="search" name="search" 
+                           value="{{ search_query }}" placeholder="Search by first name or last name...">
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i> Search
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="row">
+            {% for author in authors %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card author-card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title author-name">{{ author.first_name }} {{ author.last_name }}</h5>
+                        <p class="card-text research-group">
+                            <i class="bi bi-building"></i> {{ author.research_group.name }}
+                        </p>
+                        
+                        <div class="mb-3">
+                            <strong>Research IDs:</strong><br>
+                            {% if author.scopus_id %}
+                                <span class="id-badge has-value">
+                                    <i class="bi bi-journal-text"></i> Scopus: {{ author.scopus_id }}
+                                </span>
+                            {% else %}
+                                <span class="id-badge">Scopus: Not available</span>
+                            {% endif %}
+                            <br>
+                            
+                            {% if author.scholar_id %}
+                                <span class="id-badge has-value">
+                                    <i class="bi bi-google"></i> Scholar: {{ author.scholar_id }}
+                                </span>
+                            {% else %}
+                                <span class="id-badge">Scholar: Not available</span>
+                            {% endif %}
+                            <br>
+                            
+                            {% if author.orcid_id %}
+                                <span class="id-badge has-value">
+                                    <i class="bi bi-person-badge"></i> ORCID: {{ author.orcid_id }}
+                                </span>
+                            {% else %}
+                                <span class="id-badge">ORCID: Not available</span>
+                            {% endif %}
+                        </div>
+                        
+                        {% if author.staff_url %}
+                        <div class="mt-auto">
+                            <a href="{{ author.staff_url }}" target="_blank" class="staff-link">
+                                <i class="bi bi-link-45deg"></i> Staff Profile
+                            </a>
+                        </div>
+                        {% endif %}
                     </div>
-                    {% endif %}
                 </div>
             </div>
-        </div>
-        {% empty %}
-        <div class="col-12">
-            <div class="text-center py-5">
-                <i class="bi bi-search" style="font-size: 3rem; color: #9ca3af;"></i>
-                <h4 class="mt-3 text-muted">No authors found</h4>
-                <p class="text-muted">Try adjusting your search terms</p>
+            {% empty %}
+            <div class="col-12">
+                <div class="text-center py-5">
+                    <i class="bi bi-search" style="font-size: 3rem; color: #9ca3af;"></i>
+                    <h4 class="mt-3 text-muted">No authors found</h4>
+                    <p class="text-muted">Try adjusting your search terms</p>
+                </div>
             </div>
+            {% endfor %}
         </div>
-        {% endfor %}
+        
+        {% if authors %}
+        <div class="mt-4 text-center">
+            <p class="text-muted">Showing {{ authors|length }} author{{ authors|length|pluralize }}</p>
+        </div>
+        {% endif %}
     </div>
-    
-    {% if authors %}
-    <div class="mt-4 text-center">
-        <p class="text-muted">Showing {{ authors|length }} author{{ authors|length|pluralize }}</p>
-    </div>
-    {% endif %}
-</div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html> 

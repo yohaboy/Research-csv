@@ -432,7 +432,13 @@ def get_keyword_counts_per_group():
     return result
 
 def index(request):
-    return render(request, 'research/index.html')
+    context = {
+        'authors_count': Author.objects.count(),
+        'publications_count': Publication.objects.count(),
+        'research_groups_count': ResearchGroup.objects.count(),
+        'author_publications_count': AuthorPublication.objects.count(),
+    }
+    return render(request, 'research/index.html', context)
 
 def report_new_papers(request):
     since = request.GET.get('since')
