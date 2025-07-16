@@ -152,8 +152,12 @@ def fetch_and_store_publications_for_author(author, since_date):
             defaults={
                 'keywords': keywords,
                 'abstract': pub.get('abstract', ''),
+                'url': pub.get('url', ''),
             }
         )
+        if not created and pub.get('url') and pub_obj.url != pub.get('url'):
+            pub_obj.url = pub.get('url')
+            pub_obj.save()
         AuthorPublication.objects.get_or_create(
             author=author,
             publication=pub_obj,
@@ -200,6 +204,14 @@ def fetch_abstract_details(doc_scopus_id):
 
         data = resp.json()
         coredata = data.get('abstracts-retrieval-response', {}).get('coredata', {})
+        doi = coredata.get('prism:doi', '')
+        links = coredata.get('link', [])
+        scopus_link = ''
+        if isinstance(links, list):
+            for link in links:
+                if link.get('@rel') == 'scopus':
+                    scopus_link = link.get('@href', '')
+                    break
         authors = data.get('abstracts-retrieval-response', {}).get('authors', {}).get('author', [])
 
         abstract = coredata.get('dc:description', '')
@@ -248,12 +260,20 @@ def query_scopus_api(scopus_id, since_date):
             if not pub_date or pub_date < since_date:
                 continue
 
+            url = ''
+            doi = details.get('doi', '') if details else ''
+            if doi:
+                url = f'https://doi.org/{doi}'
+            elif details and 'scopus_link' in details:
+                url = details['scopus_link']
+
             all_results.append({
                 'title': details.get('title', ''),
                 'publication_date': pub_date,
                 'keywords': details.get('keywords', []),
                 'abstract': details.get('abstract', ''),
                 'authors': details.get('authors', []),
+                'url': url,
             })
 
         start += count
@@ -283,12 +303,16 @@ def query_scholar_api(scholar_id, since_date):
             if year_int >= since_date.year:
                 abstract = bib.get('abstract', '')
                 keywords = ', '.join(bib.get('keywords', [])) if 'keywords' in bib else ''
+                url = bib.get('url', '').strip()
+                if not url and 'pub_url' in bib:
+                    url = bib.get('pub_url', '').strip()
                 publications.append({
                     'title': title,
                     'publication_date': datetime(year_int, 1, 1).date(),
                     'keywords': keywords,
                     'abstract': abstract,
                     'author_order': 1,
+                    'url': url,
                 })
         return publications
 
@@ -346,12 +370,20 @@ def query_orcid_api(orcid_id, since_date):
             if pub_date < since_date:
                 continue
 
+            url = work.get('url', {}).get('value', '')
+            if not url:
+                for eid in work.get('external-ids', {}).get('external-id', []):
+                    if eid.get('external-id-type') == 'doi':
+                        url = f"https://doi.org/{eid.get('external-id-value')}"
+                        break
+
             results.append({
                 'title': title,
                 'publication_date': pub_date,
                 'keywords': '',
                 'abstract': '',
                 'author_order': 1,
+                'url': url,
             })
 
         return results

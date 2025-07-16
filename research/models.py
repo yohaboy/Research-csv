@@ -24,6 +24,7 @@ class Publication(models.Model):
     keywords = models.TextField(blank=True)
     abstract = models.TextField(blank=True)
     date_added = models.DateTimeField(auto_now_add=True)
+    url = models.URLField(max_length=500, blank=True, null=True)
 
     def __str__(self):
         return self.title
