@@ -98,6 +98,22 @@
       .back-link:hover {
         background: #cbd5e1;
       }
+      .card-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+      }
+      .card {
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+        padding: 1.5rem;
+        transition: box-shadow 0.2s;
+      }
+      .card:hover {
+        box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+      }
     </style>
   </head>
   <body>
@@ -118,13 +134,32 @@
           <th>Keyword</th>
           <th>Count</th>
         </tr>
-        {% for kw, count in keywords.items %}
+        {% for kw, papers in keywords.items %}
         <tr>
           <td>{{ kw }}</td>
-          <td>{{ count }}</td>
+          <td>{{ papers|length }}</td>
         </tr>
         {% endfor %}
       </table>
+      {% for kw, papers in keywords.items %}
+      <h2>{{ kw }}</h2>
+      {% if papers %}
+      <div class="card-grid">
+        {% for paper in papers %}
+        <div class="card">
+          <h3>{{ paper.title }}</h3>
+          <p><strong>Date:</strong> {{ paper.publication_date }}</p>
+          <p><strong>Keywords:</strong> {{ paper.keywords }}</p>
+          <p><strong>Abstract:</strong> {{ paper.abstract|truncatewords:30 }}</p>
+          <p><strong>Authors:</strong> {% for ap in paper.authorpublication_set.all %}{{ ap.author }}{% if not forloop.last %}, {% endif %}{% endfor %}</p>
+          {% if paper.url %}<p><a href="{{ paper.url }}" target="_blank">View Publication</a></p>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="result">No papers found for this keyword.</div>
+      {% endif %}
+      {% endfor %}
       <a class="back-link" href="{% url 'index' %}">Back to Dashboard</a>
     </div>
   </body>

@@ -50,6 +50,22 @@
       .back-link:hover {
         background: #cbd5e1;
       }
+      .card-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+      }
+      .card {
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+        padding: 1.5rem;
+        transition: box-shadow 0.2s;
+      }
+      .card:hover {
+        box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+      }
     </style>
   </head>
   <body>
@@ -59,6 +75,22 @@
         Number of papers involving two or more research groups:
         <strong>{{ count }}</strong>
       </div>
+      {% if multi_group_pubs %}
+      <div class="card-grid">
+        {% for pub in multi_group_pubs %}
+        <div class="card">
+          <h3>{{ pub.title }}</h3>
+          <p><strong>Date:</strong> {{ pub.publication_date }}</p>
+          <p><strong>Keywords:</strong> {{ pub.keywords }}</p>
+          <p><strong>Abstract:</strong> {{ pub.abstract|truncatewords:30 }}</p>
+          <p><strong>Authors:</strong> {% for ap in pub.authorpublication_set.all %}{{ ap.author }}{% if not forloop.last %}, {% endif %}{% endfor %}</p>
+          {% if pub.url %}<p><a href="{{ pub.url }}" target="_blank">View Publication</a></p>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="result">No multi-group papers found.</div>
+      {% endif %}
       <a class="back-link" href="{% url 'index' %}">Back to Dashboard</a>
     </div>
   </body>

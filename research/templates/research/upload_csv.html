@@ -72,6 +72,22 @@
       .back-link:hover {
         background: #cbd5e1;
       }
+      .clear-btn {
+        background: #ef4444;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        padding: 12px 0;
+        font-size: 1.08rem;
+        cursor: pointer;
+        width: 100%;
+        margin-top: 8px;
+        box-shadow: 0 2px 8px rgba(239, 68, 68, 0.08);
+        transition: background 0.2s;
+      }
+      .clear-btn:hover {
+        background: #b91c1c;
+      }
     </style>
   </head>
   <body>
@@ -87,6 +103,11 @@
       <form method="post" enctype="multipart/form-data">
         {% csrf_token %} {{ form.as_p }}
         <button type="submit">Process CSV</button>
+      </form>
+      <form method="post" id="clear-data-form" style="margin-top: 18px;">
+        {% csrf_token %}
+        <input type="hidden" name="clear_data" value="1" />
+        <button type="submit" class="clear-btn">Clear All Data</button>
       </form>
       <div id="csv-status"></div>
       <a class="back-link" href="{% url 'index' %}">Back to Dashboard</a>
@@ -138,6 +159,11 @@
                 statusDiv.textContent = "Error checking task status.";
               });
           }, 2000);
+        }
+      });
+      document.getElementById('clear-data-form').addEventListener('submit', function(e) {
+        if (!confirm('Are you sure you want to clear ALL data from the database? This action cannot be undone.')) {
+          e.preventDefault();
         }
       });
     </script>

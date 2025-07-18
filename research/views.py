@@ -475,13 +475,18 @@ def index(request):
 def report_new_papers(request):
     since = request.GET.get('since')
     since_date = None
+    papers = []
     if since:
         try:
             since_date = datetime.strptime(since, '%Y-%m-%d').date()
         except Exception:
             since_date = None
-    count = get_new_papers_count(since_date) if since_date else None
-    return render(request, 'research/report_new_papers.html', {'count': count, 'since': since})
+    if since_date:
+        papers = Publication.objects.filter(publication_date__gt=since_date)
+        count = papers.count()
+    else:
+        count = None
+    return render(request, 'research/report_new_papers.html', {'count': count, 'since': since, 'papers': papers})
 
 def report_keyword_counts(request):
     since = request.GET.get('since')
@@ -491,24 +496,73 @@ def report_keyword_counts(request):
             since_date = datetime.strptime(since, '%Y-%m-%d').date()
         except Exception:
             since_date = None
-    keywords = get_keyword_counts(since_date)
-    return render(request, 'research/report_keyword_counts.html', {'keywords': keywords, 'since': since})
+    qs = Publication.objects.all()
+    if since_date:
+        qs = qs.filter(publication_date__gt=since_date)
+    keyword_dict = {}
+    for pub in qs:
+        for kw in pub.keywords.split(','):
+            kw = kw.strip().lower()
+            if kw:
+                keyword_dict.setdefault(kw, []).append(pub)
+    return render(request, 'research/report_keyword_counts.html', {'keywords': keyword_dict, 'since': since})
 
 def report_multi_group_papers(request):
-    count = get_multi_group_paper_counts()
-    return render(request, 'research/report_multi_group_papers.html', {'count': count})
+    multi_group_pubs = []
+    for pub in Publication.objects.all():
+        groups = set(pub.authorpublication_set.select_related('author__research_group').values_list('author__research_group__name', flat=True))
+        if len(groups) > 1:
+            multi_group_pubs.append(pub)
+    count = len(multi_group_pubs)
+    return render(request, 'research/report_multi_group_papers.html', {'count': count, 'multi_group_pubs': multi_group_pubs})
 
 def report_group_author_multi_group(request):
-    data = get_group_author_multi_group_counts()
-    return render(request, 'research/report_group_author_multi_group.html', {'data': data})
+    # For each group: authors and their list of multi-group papers
+    result = {}
+    for group in ResearchGroup.objects.all():
+        authors = Author.objects.filter(research_group=group)
+        author_pubs = {}
+        for author in authors:
+            pubs = []
+            for ap in author.authorpublication_set.all():
+                pub = ap.publication
+                groups = set(pub.authorpublication_set.select_related('author__research_group').values_list('author__research_group__name', flat=True))
+                if len(groups) > 1:
+                    pubs.append(pub)
+            if pubs:
+                author_pubs[author.__str__()] = pubs
+        result[group.name] = author_pubs
+    return render(request, 'research/report_group_author_multi_group.html', {'data': result})
 
 def report_total_papers_per_group(request):
-    data = get_total_papers_per_group()
-    return render(request, 'research/report_total_papers_per_group.html', {'data': data})
+    # For each group: list of papers published
+    result = {}
+    for group in ResearchGroup.objects.all():
+        authors = Author.objects.filter(research_group=group)
+        pub_ids = set()
+        for author in authors:
+            pub_ids.update(author.authorpublication_set.values_list('publication_id', flat=True))
+        pubs = Publication.objects.filter(id__in=pub_ids)
+        result[group.name] = list(pubs)
+    return render(request, 'research/report_total_papers_per_group.html', {'data': result})
 
 def report_keyword_counts_per_group(request):
-    data = get_keyword_counts_per_group()
-    return render(request, 'research/report_keyword_counts_per_group.html', {'data': data})
+    # For each group: dict of keyword to list of publications
+    result = {}
+    for group in ResearchGroup.objects.all():
+        authors = Author.objects.filter(research_group=group)
+        pub_ids = set()
+        for author in authors:
+            pub_ids.update(author.authorpublication_set.values_list('publication_id', flat=True))
+        pubs = Publication.objects.filter(id__in=pub_ids)
+        keyword_dict = {}
+        for pub in pubs:
+            for kw in pub.keywords.split(','):
+                kw = kw.strip().lower()
+                if kw:
+                    keyword_dict.setdefault(kw, []).append(pub)
+        result[group.name] = keyword_dict
+    return render(request, 'research/report_keyword_counts_per_group.html', {'data': result})
 
 def trigger_fetch_publications(request):
     from .tasks import fetch_publications_task
