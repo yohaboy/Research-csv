@@ -84,6 +84,15 @@ def robust_scrape_staff_ids(staff_url, scopus_id, scholar_id, orcid_id):
 
 def upload_csv(request):
     if request.method == 'POST':
+        # Handle clear data request
+        if request.POST.get('clear_data'):
+            # Clear all relevant tables
+            AuthorPublication.objects.all().delete()
+            Publication.objects.all().delete()
+            Author.objects.all().delete()
+            ResearchGroup.objects.all().delete()
+            messages.success(request, 'All data has been cleared from the database.')
+            return redirect('upload_csv')
         form = CSVUploadForm(request.POST, request.FILES)
         if form.is_valid():
             csv_file = form.cleaned_data['csv_file']
