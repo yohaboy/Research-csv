@@ -19,7 +19,7 @@ from django.http import JsonResponse
 from celery.result import AsyncResult
 from django.views.decorators.csrf import csrf_exempt
 
-class CSVUploadForm(forms.Form):
+class FileUploadForm(forms.Form):
     csv_file = forms.FileField()
 
 class StaffIDScraper(HTMLParser):
@@ -82,9 +82,8 @@ def robust_scrape_staff_ids(staff_url, scopus_id, scholar_id, orcid_id):
         pass
     return scopus_id, scholar_id, orcid_id
 
-def upload_csv(request):
+def upload_file(request):
     if request.method == 'POST':
-        # Handle clear data request
         if request.POST.get('clear_data'):
             # Clear all relevant tables
             AuthorPublication.objects.all().delete()
@@ -92,30 +91,38 @@ def upload_csv(request):
             Author.objects.all().delete()
             ResearchGroup.objects.all().delete()
             messages.success(request, 'All data has been cleared from the database.')
-            return redirect('upload_csv')
-        form = CSVUploadForm(request.POST, request.FILES)
+            return redirect('upload_file')
+
+        form = FileUploadForm(request.POST, request.FILES)
         if form.is_valid():
-            csv_file = form.cleaned_data['csv_file']
-            if not csv_file.name.endswith('.csv'):
+            uploaded_file = form.cleaned_data['csv_file']
+            filename = uploaded_file.name.lower()
+
+            if not filename.endswith(('.csv', '.xls', '.xlsx')):
+                error_msg = 'File must be .csv, .xls, or .xlsx format.'
                 if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-                    return JsonResponse({'error': 'File is not CSV type'}, status=400)
-                messages.error(request, 'File is not CSV type')
-                return redirect('upload_csv')
+                    return JsonResponse({'error': error_msg}, status=400)
+                messages.error(request, error_msg)
+                return redirect('upload_file')
+
             try:
-                data = csv_file.read().decode('utf-8')
-                from research.tasks import process_csv_upload
-                task = process_csv_upload.delay(data)
+                file_bytes = uploaded_file.read()
+                from research.tasks import process_file_upload
+                task = process_file_upload.delay(file_bytes, filename)
+
                 if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-                    return JsonResponse({'task_id': task.id, 'message': 'CSV processing started.'})
-                messages.success(request, 'CSV upload started! The data will be processed in the background.')
-                return redirect('upload_csv')
+                    return JsonResponse({'task_id': task.id, 'message': 'File upload started.'})
+                messages.success(request, 'Upload started! Data will be processed in the background.')
+                return redirect('upload_file')
+
             except Exception as e:
                 if request.headers.get('x-requested-with') == 'XMLHttpRequest':
                     return JsonResponse({'error': str(e)}, status=500)
                 messages.error(request, f'Error processing file: {e}')
-                return redirect('upload_csv')
+                return redirect('upload_file')
     else:
-        form = CSVUploadForm()
+        form = FileUploadForm()
+
     return render(request, 'research/upload_csv.html', {'form': form})
 
 @csrf_exempt

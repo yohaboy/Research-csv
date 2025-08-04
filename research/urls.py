@@ -4,7 +4,7 @@ from research.views import check_csv_task_status
 
 urlpatterns = [
     path('', views.index, name='index'),
-    path('upload/', views.upload_csv, name='upload_csv'),
+    path('upload/', views.upload_file, name='upload_csv'),
     path('report/new-papers/', views.report_new_papers, name='report_new_papers'),
     path('report/keyword-counts/', views.report_keyword_counts, name='report_keyword_counts'),
     path('report/multi-group-papers/', views.report_multi_group_papers, name='report_multi_group_papers'),
