@@ -106,7 +106,10 @@
                             <strong>Research IDs:</strong><br>
                             {% if author.scopus_id %}
                                 <span class="id-badge has-value">
-                                    <i class="bi bi-journal-text"></i> Scopus: {{ author.scopus_id }}
+                                    <i class="bi bi-journal-text"></i> 
+                                    <a href="https://www.scopus.com/authid/detail.uri?authorId={{ author.scopus_id }}" target="_blank" class="text-decoration-none">
+                                        Scopus: {{ author.scopus_id }}
+                                    </a>
                                 </span>
                             {% else %}
                                 <span class="id-badge">Scopus: Not available</span>
@@ -115,7 +118,10 @@
                             
                             {% if author.scholar_id %}
                                 <span class="id-badge has-value">
-                                    <i class="bi bi-google"></i> Scholar: {{ author.scholar_id }}
+                                    <i class="bi bi-google"></i> 
+                                    <a href="https://scholar.google.com/citations?user={{ author.scholar_id }}" target="_blank" class="text-decoration-none">
+                                        Scholar: {{ author.scholar_id }}
+                                    </a>
                                 </span>
                             {% else %}
                                 <span class="id-badge">Scholar: Not available</span>
@@ -124,7 +130,10 @@
                             
                             {% if author.orcid_id %}
                                 <span class="id-badge has-value">
-                                    <i class="bi bi-person-badge"></i> ORCID: {{ author.orcid_id }}
+                                    <i class="bi bi-person-badge"></i> 
+                                    <a href="https://orcid.org/{{ author.orcid_id }}" target="_blank" class="text-decoration-none">
+                                        ORCID: {{ author.orcid_id }}
+                                    </a>
                                 </span>
                             {% else %}
                                 <span class="id-badge">ORCID: Not available</span>
@@ -161,4 +170,4 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-</html> 
+</html>
