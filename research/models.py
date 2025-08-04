@@ -25,7 +25,7 @@ class Publication(models.Model):
     abstract = models.TextField(blank=True)
     date_added = models.DateTimeField(auto_now_add=True)
     url = models.URLField(max_length=500, blank=True, null=True)
-
+    source = models.CharField(max_length=50, choices=[('Scopus', 'Scopus'), ('Google Scholar', 'Google Scholar'), ('ORCID', 'ORCID')], blank=True, null=True)
     def __str__(self):
         return self.title
 

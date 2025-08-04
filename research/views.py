@@ -169,6 +169,7 @@ def fetch_and_store_publications_for_author(author, since_date):
                 'keywords': keywords,
                 'abstract': pub.get('abstract', ''),
                 'url': pub.get('url', ''),
+                'source': pub.get('source', ''),
             }
         )
         if not created and pub.get('url') and pub_obj.url != pub.get('url'):
@@ -290,6 +291,7 @@ def query_scopus_api(scopus_id, since_date):
                 'abstract': details.get('abstract', ''),
                 'authors': details.get('authors', []),
                 'url': url,
+                'source': 'Scopus',
             })
 
         start += count
@@ -329,6 +331,7 @@ def query_scholar_api(scholar_id, since_date):
                     'abstract': abstract,
                     'author_order': 1,
                     'url': url,
+                    'source': 'Google Scholar',
                 })
         return publications
 
@@ -400,6 +403,7 @@ def query_orcid_api(orcid_id, since_date):
                 'abstract': '',
                 'author_order': 1,
                 'url': url,
+                'source': 'ORCID',
             })
 
         return results
@@ -587,31 +591,34 @@ def trigger_fetch_publications(request):
     return redirect('index')
 
 def scholar_dashboard(request):
-    group_id = request.GET.get('group')
-    author_id = request.GET.get('author')
+    selected_group = request.GET.get('group')
+    selected_author = request.GET.get('author')
+    selected_source = request.GET.get('source')
+
+    publications = Publication.objects.all()
+
+    if selected_group:
+        publications = publications.filter(author__research_group__id=selected_group)
+    if selected_author:
+        publications = publications.filter(author__id=selected_author)
+    if selected_source:
+        publications = publications.filter(source=selected_source)
 
     research_groups = ResearchGroup.objects.all()
-    authors = Author.objects.select_related('research_group').all()
-    publications = Publication.objects.all()
-    author_publications = AuthorPublication.objects.select_related('author', 'publication').all()
-
-    # Apply filters
-    if group_id:
-        authors = authors.filter(research_group_id=group_id)
-        author_publications = author_publications.filter(author__research_group_id=group_id)
-    if author_id:
-        author_publications = author_publications.filter(author_id=author_id)
-        publications = publications.filter(id__in=author_publications.values('publication_id'))
+    authors = Author.objects.all()
+    author_publications = AuthorPublication.objects.select_related('author', 'publication')
 
     context = {
+        'publications': publications.distinct(),
         'research_groups': research_groups,
         'authors': authors,
-        'publications': publications,
         'author_publications': author_publications,
-        'selected_group': int(group_id) if group_id else None,
-        'selected_author': int(author_id) if author_id else None,
+        'selected_group': int(selected_group) if selected_group else None,
+        'selected_author': int(selected_author) if selected_author else None,
+        'selected_source': selected_source,
     }
     return render(request, 'research/scholar_dashboard.html', context)
+
 
 def author_details(request):
     search_query = request.GET.get('search', '')
