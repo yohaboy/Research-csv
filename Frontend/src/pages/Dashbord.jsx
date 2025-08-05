@@ -65,31 +65,6 @@ const ScholarDashboard = () => {
 
   return (
     <div className="bg-gray-50 min-h-screen">
-      {/* Navigation Bar */}
-      <nav className="bg-white shadow-sm py-4">
-        <div className="container mx-auto px-4">
-          <div className="flex justify-between items-center">
-            <a href="/" className="text-xl font-semibold text-blue-800">
-              <i className="bi bi-graph-up mr-2"></i> Research Dashboard
-            </a>
-            <div className="hidden md:flex space-x-6">
-              <a href="/" className="text-gray-500 hover:text-blue-800">
-                <i className="bi bi-house mr-1"></i> Home
-              </a>
-              <a href="/scholar-dashboard" className="text-blue-800">
-                <i className="bi bi-journal-text mr-1"></i> Scholar Dashboard
-              </a>
-              <a href="/author-details" className="text-gray-500 hover:text-blue-800">
-                <i className="bi bi-people mr-1"></i> Author Details
-              </a>
-            </div>
-            <button className="md:hidden text-gray-500">
-              <i className="bi bi-list text-2xl"></i>
-            </button>
-          </div>
-        </div>
-      </nav>
-
       {/* Main Content */}
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-3xl font-semibold text-gray-800 mb-8">Dashboard</h1>

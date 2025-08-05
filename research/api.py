@@ -26,6 +26,16 @@ class BaseAPIView(APIView):
                 pass
         return None
 
+class IndexAPIView(APIView):
+    def get(self, request):
+        data = {
+            'authors_count': Author.objects.count(),
+            'publications_count': Publication.objects.count(),
+            'research_groups_count': ResearchGroup.objects.count(),
+            'author_publications_count': AuthorPublication.objects.count(),
+        }
+        return Response(data)
+
 class AuthorList(generics.ListAPIView):
     queryset = Author.objects.select_related('research_group').all()
     serializer_class = AuthorSerializer
