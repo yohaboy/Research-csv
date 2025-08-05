@@ -5,6 +5,7 @@ import NewPublicationsCount from './pages/NewPub';
 import KeywordCounts from './pages/Keyword';
 import MultiGroupPapersCount from './pages/MultiGroup';
 import GroupAuthorMultiGroup from './pages/MultiAuthor';
+import TotalPapersPerGroup from './pages/TotalPPG';
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
       <KeywordCounts />
       <MultiGroupPapersCount />
       <GroupAuthorMultiGroup />
+      <TotalPapersPerGroup />
     </div>
   );
 }

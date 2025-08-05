@@ -153,9 +153,15 @@ class TotalPapersPerGroup(BaseAPIView):
             authors = Author.objects.filter(research_group=group)
             pub_ids = set()
             for author in authors:
-                pub_ids.update(author.authorpublication_set.values_list('publication_id', flat=True))
-            result[group.name] = len(pub_ids)
-        return Response(result)
+                pub_ids.update(
+                    author.authorpublication_set.values_list('publication_id', flat=True)
+                )
+
+            pubs = Publication.objects.filter(id__in=pub_ids)
+            serializer = PublicationSerializer(pubs, many=True)
+            result[group.name] = serializer.data
+
+        return Response({"data": result})
 
 class KeywordCountsPerGroup(BaseAPIView):
     def get(self, request):
