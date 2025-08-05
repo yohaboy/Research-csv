@@ -4,6 +4,7 @@ import NavBar from './components/NavBar';
 import NewPublicationsCount from './pages/NewPub';
 import KeywordCounts from './pages/Keyword';
 import MultiGroupPapersCount from './pages/MultiGroup';
+import GroupAuthorMultiGroup from './pages/MultiAuthor';
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
       <NewPublicationsCount />
       <KeywordCounts />
       <MultiGroupPapersCount />
+      <GroupAuthorMultiGroup />
     </div>
   );
 }

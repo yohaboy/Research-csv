@@ -120,21 +120,31 @@ class MultiGroupPapersCount(BaseAPIView):
 class GroupAuthorMultiGroup(BaseAPIView):
     def get(self, request):
         result = {}
+
         for group in ResearchGroup.objects.all():
             authors = Author.objects.filter(research_group=group)
             author_counts = {}
+
             for author in authors:
                 count = 0
                 for ap in author.authorpublication_set.all():
                     pub = ap.publication
-                    groups = set(pub.authorpublication_set.select_related('author__research_group')
-                                .values_list('author__research_group__name', flat=True))
+                    groups = set(
+                        pub.authorpublication_set
+                        .select_related('author__research_group')
+                        .values_list('author__research_group__name', flat=True)
+                    )
                     if len(groups) > 1:
                         count += 1
+
                 if count > 0:
-                    author_counts[author.__str__()] = count
-            result[group.name] = author_counts
-        return Response(result)
+                    author_counts[str(author)] = count
+
+            if author_counts:
+                result[group.name] = author_counts
+
+        return Response({"data": result})
+
 
 class TotalPapersPerGroup(BaseAPIView):
     def get(self, request):
