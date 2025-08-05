@@ -77,7 +77,6 @@ class NewPublicationsCount(BaseAPIView):
         papers = Publication.objects.filter(publication_date__gt=since_date)    
         count = papers.count()
         serialized_papers = PublicationSerializer(papers, many=True)
-        print(f"DEBUG: type(serialized_papers) = {type(serialized_papers)}")  # Add this
         return Response({"count": count, "since": since_date ,"papers":serialized_papers.data})
 
 class KeywordCounts(BaseAPIView):
@@ -99,14 +98,24 @@ class KeywordCounts(BaseAPIView):
 
 class MultiGroupPapersCount(BaseAPIView):
     def get(self, request):
-        multi_group_pubs = set()
+        multi_group_pub_ids = set()
         for pub in Publication.objects.all():
-            groups = set(pub.authorpublication_set.select_related('author__research_group')
-                        .values_list('author__research_group__name', flat=True))
+            groups = set(
+                pub.authorpublication_set
+                .select_related('author__research_group')
+                .values_list('author__research_group__name', flat=True)
+            )
             if len(groups) > 1:
-                multi_group_pubs.add(pub.id)
-                
-        return Response({"count": len(multi_group_pubs)})
+                multi_group_pub_ids.add(pub.id)
+        
+        multi_group_pubs_qs = Publication.objects.filter(id__in=multi_group_pub_ids)
+        serialized_pubs = PublicationSerializer(multi_group_pubs_qs, many=True)
+
+        return Response({
+            "count": multi_group_pubs_qs.count(),
+            "publications": serialized_pubs.data
+        })
+
 
 class GroupAuthorMultiGroup(BaseAPIView):
     def get(self, request):
