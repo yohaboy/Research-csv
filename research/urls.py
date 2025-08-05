@@ -8,7 +8,7 @@ from .api import (
 )
 
 urlpatterns = [
-    path('', views.index, name='index'),
+    path('', views.index, name='index'),#done
     path('upload/', views.upload_file, name='upload_csv'),#done
     path('authors/', views.author_details, name='author_details'), #done
     path('report/new-papers/', views.report_new_papers, name='report_new_papers'), #done
@@ -33,6 +33,6 @@ urlpatterns = [
     path('api/stats/group-author-multi-group/', GroupAuthorMultiGroup.as_view(), name='api_group_author_multi_group'),
     path('api/stats/total-papers-per-group/', TotalPapersPerGroup.as_view(), name='api_total_papers_per_group'),
     path('api/stats/keywords-per-group/', KeywordCountsPerGroup.as_view(), name='api_keywords_per_group'),
-    path('api/fetch-publications/', TriggerFetchPublications.as_view(), name='api_fetch_publications'),
+    # path('api/fetch-publications/', TriggerFetchPublications.as_view(), name='api_fetch_publications'),
     path('api/check-task-status/', CheckTaskStatus.as_view(), name='api_check_task_status'),
 ] 

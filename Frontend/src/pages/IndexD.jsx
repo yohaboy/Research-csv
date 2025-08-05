@@ -34,12 +34,6 @@ const Dashboard = () => {
       link: '/upload-csv'
     },
     {
-      title: 'Fetch Publications',
-      icon: 'bi-cloud-download',
-      description: 'Background task to fetch publications from APIs',
-      link: '/fetch-publications'
-    },
-    {
       title: 'Publication Dashboard',
       icon: 'bi-journal-text',
       description: 'Browse all publications and research data',
@@ -91,7 +85,6 @@ const Dashboard = () => {
 
   return (
     <div className="bg-gray-50 min-h-screen">
-      {/* Main Content */}
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         <h1 className="text-3xl font-semibold text-center text-gray-800 mb-8">Research Reporting Dashboard</h1>
         

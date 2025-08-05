@@ -1,3 +1,4 @@
+from celery import chain
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework import status, parsers
@@ -109,12 +110,19 @@ class FileUploadView(BaseAPIView):
 
         try:
             file_bytes = uploaded_file.read()
-            from .tasks import process_file_upload
-            task = process_file_upload.delay(file_bytes, filename)
+            from .tasks import process_file_upload ,fetch_publications_task
+            
+            task_chain = chain(
+                process_file_upload.s(file_bytes, filename),
+                fetch_publications_task.s()
+            )
+            task_result = task_chain.apply_async()
+            
             return Response({
                 'message': 'File upload started.',
-                'task_id': task.id
+                'task_id':task_result.id
             }, status=status.HTTP_202_ACCEPTED)
+        
         except Exception as e:
             return Response({'error': f'Error processing file: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
