@@ -1,11 +1,9 @@
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
-from django.http import JsonResponse
-from django.db.models import Count, Q
-from django.utils import timezone
-from datetime import datetime, timedelta
+from rest_framework.permissions import IsAuthenticated ,AllowAny
+from django.db.models import Q
+from datetime import datetime
 from .models import Author, ResearchGroup, Publication, AuthorPublication
 from .serializers import (
     AuthorSerializer,
@@ -15,7 +13,7 @@ from .serializers import (
 )
 
 class BaseAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def get_since_date(self, request):
         since = request.query_params.get('since')
@@ -29,7 +27,7 @@ class BaseAPIView(APIView):
 class AuthorList(generics.ListAPIView):
     queryset = Author.objects.select_related('research_group').all()
     serializer_class = AuthorSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -44,11 +42,11 @@ class AuthorList(generics.ListAPIView):
 class ResearchGroupList(generics.ListAPIView):
     queryset = ResearchGroup.objects.all()
     serializer_class = ResearchGroupSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
 class PublicationList(generics.ListAPIView):
     serializer_class = PublicationSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def get_queryset(self):
         queryset = Publication.objects.all()
