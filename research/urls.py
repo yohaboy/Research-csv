@@ -21,7 +21,8 @@ urlpatterns = [
     path('check_csv_task_status/', views.check_csv_task_status, name='check_csv_task_status'),
     path('scholar/', views.scholar_dashboard, name='scholar_dashboard'),#done
 
-        # API URLs
+    # API URLs
+    
     path('api/index/', IndexAPIView.as_view(), name='index-api'),
     path('api/upload/', FileUploadView.as_view(), name='api_file_upload'),
     path('api/authors/', AuthorList.as_view(), name='api_authors'),

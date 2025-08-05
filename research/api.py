@@ -90,7 +90,7 @@ class PublicationList(APIView):
 
 
 class FileUploadView(BaseAPIView):
-    parser_classes = [parsers.MultiPartParser, parsers.FormParser]
+    parser_classes = [parsers.MultiPartParser, parsers.FormParser , parsers.JSONParser]
 
     def post(self, request, *args, **kwargs):
         if request.data.get('clear_data'):
