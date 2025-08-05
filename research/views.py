@@ -19,8 +19,6 @@ from django.http import JsonResponse
 from celery.result import AsyncResult
 from django.views.decorators.csrf import csrf_exempt
 
-class FileUploadForm(forms.Form):
-    csv_file = forms.FileField()
 
 class StaffIDScraper(HTMLParser):
     def __init__(self):
@@ -81,6 +79,9 @@ def robust_scrape_staff_ids(staff_url, scopus_id, scholar_id, orcid_id):
     except Exception:
         pass
     return scopus_id, scholar_id, orcid_id
+
+class FileUploadForm(forms.Form):
+    csv_file = forms.FileField()
 
 def upload_file(request):
     if request.method == 'POST':

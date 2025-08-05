@@ -1,7 +1,7 @@
 from django.urls import path
 from . import views
 from .api import (
-    AuthorList, ResearchGroupList, PublicationList,
+    AuthorList, FileUploadView, ResearchGroupList, PublicationList,
     NewPublicationsCount, KeywordCounts, MultiGroupPapersCount,
     GroupAuthorMultiGroup, TotalPapersPerGroup, KeywordCountsPerGroup,
     TriggerFetchPublications, CheckTaskStatus
@@ -16,12 +16,13 @@ urlpatterns = [
     path('report/multi-group-papers/', views.report_multi_group_papers, name='report_multi_group_papers'),#done
     path('report/group-author-multi-group/', views.report_group_author_multi_group, name='report_group_author_multi_group'),#done
     path('report/total-papers-per-group/', views.report_total_papers_per_group, name='report_total_papers_per_group'),#done
-    path('report/keyword-counts-per-group/', views.report_keyword_counts_per_group, name='report_keyword_counts_per_group'),
+    path('report/keyword-counts-per-group/', views.report_keyword_counts_per_group, name='report_keyword_counts_per_group'),#done
     path('fetch-publications/', views.trigger_fetch_publications, name='fetch_publications'),
     path('check_csv_task_status/', views.check_csv_task_status, name='check_csv_task_status'),
     path('scholar/', views.scholar_dashboard, name='scholar_dashboard'),
 
         # API URLs
+    path('api/upload/', FileUploadView.as_view(), name='api_file_upload'),
     path('api/authors/', AuthorList.as_view(), name='api_authors'),
     path('api/groups/', ResearchGroupList.as_view(), name='api_groups'),
     path('api/publications/', PublicationList.as_view(), name='api_publications'),

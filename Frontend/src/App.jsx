@@ -7,6 +7,7 @@ import MultiGroupPapersCount from './pages/MultiGroup';
 import GroupAuthorMultiGroup from './pages/MultiAuthor';
 import TotalPapersPerGroup from './pages/TotalPPG';
 import KeywordCountsPerGroup from './pages/KeywordPG';
+import FileUpload from './pages/Upload';
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
       <GroupAuthorMultiGroup />
       <TotalPapersPerGroup />
       <KeywordCountsPerGroup />
+      <FileUpload />
     </div>
   );
 }

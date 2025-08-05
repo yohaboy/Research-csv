@@ -1,6 +1,8 @@
 from rest_framework import generics, status
 from rest_framework.response import Response
+from rest_framework import status, parsers
 from rest_framework.views import APIView
+
 from rest_framework.permissions import IsAuthenticated ,AllowAny
 from django.db.models import Q
 from datetime import datetime
@@ -64,6 +66,36 @@ class PublicationList(generics.ListAPIView):
             queryset = queryset.filter(source=source)
             
         return queryset.distinct()
+
+class FileUploadView(BaseAPIView):
+    parser_classes = [parsers.MultiPartParser, parsers.FormParser]
+
+    def post(self, request, *args, **kwargs):
+        if request.data.get('clear_data'):
+            AuthorPublication.objects.all().delete()
+            Publication.objects.all().delete()
+            Author.objects.all().delete()
+            ResearchGroup.objects.all().delete()
+            return Response({'message': 'All data has been cleared from the database.'}, status=status.HTTP_200_OK)
+
+        uploaded_file = request.FILES.get('csv_file')
+        if not uploaded_file:
+            return Response({'error': 'No file provided.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        filename = uploaded_file.name.lower()
+        if not filename.endswith(('.csv', '.xls', '.xlsx')):
+            return Response({'error': 'File must be .csv, .xls, or .xlsx format.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            file_bytes = uploaded_file.read()
+            from .tasks import process_file_upload
+            task = process_file_upload.delay(file_bytes, filename)
+            return Response({
+                'message': 'File upload started.',
+                'task_id': task.id
+            }, status=status.HTTP_202_ACCEPTED)
+        except Exception as e:
+            return Response({'error': f'Error processing file: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class NewPublicationsCount(BaseAPIView):
     def get(self, request):
