@@ -73,9 +73,12 @@ class NewPublicationsCount(BaseAPIView):
                 {"error": "Invalid or missing 'since' parameter (format: YYYY-MM-DD)"},
                 status=status.HTTP_400_BAD_REQUEST
             )
-            
-        count = Publication.objects.filter(publication_date__gt=since_date).count()
-        return Response({"count": count, "since": since_date})
+        
+        papers = Publication.objects.filter(publication_date__gt=since_date)    
+        count = papers.count()
+        serialized_papers = PublicationSerializer(papers, many=True)
+        print(f"DEBUG: type(serialized_papers) = {type(serialized_papers)}")  # Add this
+        return Response({"count": count, "since": since_date ,"papers":serialized_papers.data})
 
 class KeywordCounts(BaseAPIView):
     def get(self, request):
