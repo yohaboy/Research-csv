@@ -9,7 +9,7 @@ from .api import (
 
 urlpatterns = [
     path('', views.index, name='index'),
-    path('upload/', views.upload_file, name='upload_csv'),
+    path('upload/', views.upload_file, name='upload_csv'),#done
     path('authors/', views.author_details, name='author_details'), #done
     path('report/new-papers/', views.report_new_papers, name='report_new_papers'), #done
     path('report/keyword-counts/', views.report_keyword_counts, name='report_keyword_counts'), #done
