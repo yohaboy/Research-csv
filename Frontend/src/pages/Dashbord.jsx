@@ -26,16 +26,12 @@ const ScholarDashboard = () => {
       if (filters.author) params.append('author', filters.author);
       if (filters.source) params.append('source', filters.source);
 
-      const [groupsRes, authorsRes, pubsRes] = await Promise.all([
-        axios.get('http://127.0.0.1:8000/api/groups/'),
-        axios.get('http://127.0.0.1:8000/api/authors/'),
-        axios.get(`http://127.0.0.1:8000/api/publications/?${params.toString()}`)
-      ]);
+      // Single API call to get all needed data
+      const res = await axios.get(`http://127.0.0.1:8000/api/publications/?${params.toString()}`);
 
-      // Ensure we always have arrays, even if the response is empty or null
-      setResearchGroups(Array.isArray(groupsRes?.data) ? groupsRes.data : []);
-      setAuthors(Array.isArray(authorsRes?.data) ? authorsRes.data : []);
-      setPublications(Array.isArray(pubsRes?.data) ? pubsRes.data : []);
+      setResearchGroups(Array.isArray(res.data.research_groups) ? res.data.research_groups : []);
+      setAuthors(Array.isArray(res.data.authors) ? res.data.authors : []);
+      setPublications(Array.isArray(res.data.publications) ? res.data.publications : []);
     } catch (error) {
       console.error('Error fetching data:', error);
       setError('Failed to load data. Please try again.');
@@ -49,7 +45,7 @@ const ScholarDashboard = () => {
     setFilters(prev => ({ ...prev, [name]: value }));
   };
 
-  // Safe array mapping functions
+  // Render options for research groups filter
   const renderResearchGroups = () => {
     if (!Array.isArray(researchGroups)) return null;
     return researchGroups.map(group => (
@@ -57,6 +53,7 @@ const ScholarDashboard = () => {
     ));
   };
 
+  // Render options for authors filter
   const renderAuthors = () => {
     if (!Array.isArray(authors)) return null;
     return authors.map(author => (
@@ -96,7 +93,7 @@ const ScholarDashboard = () => {
       {/* Main Content */}
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-3xl font-semibold text-gray-800 mb-8">Dashboard</h1>
-        
+
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
             {error}
@@ -107,9 +104,9 @@ const ScholarDashboard = () => {
         <form className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Research Group</label>
-            <select 
-              name="group" 
-              value={filters.group} 
+            <select
+              name="group"
+              value={filters.group}
               onChange={handleFilterChange}
               className="w-full p-2 border border-gray-300 rounded-md"
             >
@@ -117,12 +114,12 @@ const ScholarDashboard = () => {
               {renderResearchGroups()}
             </select>
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Author</label>
-            <select 
-              name="author" 
-              value={filters.author} 
+            <select
+              name="author"
+              value={filters.author}
               onChange={handleFilterChange}
               className="w-full p-2 border border-gray-300 rounded-md"
             >
@@ -130,12 +127,12 @@ const ScholarDashboard = () => {
               {renderAuthors()}
             </select>
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Source</label>
-            <select 
-              name="source" 
-              value={filters.source} 
+            <select
+              name="source"
+              value={filters.source}
               onChange={handleFilterChange}
               className="w-full p-2 border border-gray-300 rounded-md"
             >
@@ -145,10 +142,10 @@ const ScholarDashboard = () => {
               <option value="ORCID">ORCID</option>
             </select>
           </div>
-          
+
           <div className="flex items-end">
-            <button 
-              type="button" 
+            <button
+              type="button"
               onClick={() => setFilters({ group: '', author: '', source: '' })}
               className="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-md"
             >
@@ -168,8 +165,8 @@ const ScholarDashboard = () => {
               <h5 className="text-lg font-medium mb-4">Research Groups</h5>
               <ul className="space-y-2 mb-8">
                 {Array.isArray(researchGroups) && researchGroups.map(group => (
-                  <li 
-                    key={group.id} 
+                  <li
+                    key={group.id}
                     className={`p-3 rounded-md cursor-pointer ${filters.group === group.id.toString() ? 'bg-blue-600 text-white' : 'bg-gray-100 hover:bg-gray-200'}`}
                     onClick={() => setFilters(prev => ({ ...prev, group: group.id.toString() }))}
                   >
@@ -177,12 +174,12 @@ const ScholarDashboard = () => {
                   </li>
                 ))}
               </ul>
-              
+
               <h5 className="text-lg font-medium mb-4">Authors</h5>
               <ul className="space-y-2">
                 {Array.isArray(authors) && authors.map(author => (
-                  <li 
-                    key={author.id} 
+                  <li
+                    key={author.id}
                     className={`p-3 rounded-md cursor-pointer ${filters.author === author.id.toString() ? 'bg-blue-600 text-white' : 'bg-gray-100 hover:bg-gray-200'}`}
                     onClick={() => setFilters(prev => ({ ...prev, author: author.id.toString() }))}
                   >
@@ -196,7 +193,7 @@ const ScholarDashboard = () => {
             {/* Publications */}
             <div className="w-full md:w-3/4">
               <h4 className="text-xl font-medium mb-6">Publications</h4>
-              
+
               {!Array.isArray(publications) || publications.length === 0 ? (
                 <p className="text-gray-500">No publications found.</p>
               ) : (
@@ -212,18 +209,18 @@ const ScholarDashboard = () => {
                       ) : (
                         <h5 className="text-lg font-medium mb-2">{publication.title}</h5>
                       )}
-                      
+
                       <h6 className="text-sm text-gray-500 mb-3">{publication.publication_date}</h6>
                       <p className="text-gray-700 mb-4">{publication.abstract}</p>
-                      
+
                       <p className="text-sm mb-2">
                         <span className="font-medium">Authors:</span> {publication.authors?.map(a => `${a.first_name} ${a.last_name}`).join(', ')}
                       </p>
-                      
+
                       <p className="text-sm mb-2">
                         <span className="font-medium">Keywords:</span> {publication.keywords}
                       </p>
-                      
+
                       <p className="text-sm">
                         <span className="font-medium">Source:</span> {publication.source}
                       </p>

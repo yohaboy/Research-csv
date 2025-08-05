@@ -46,26 +46,37 @@ class ResearchGroupList(generics.ListAPIView):
     serializer_class = ResearchGroupSerializer
     permission_classes = [AllowAny]
 
-class PublicationList(generics.ListAPIView):
-    serializer_class = PublicationSerializer
-    permission_classes = [AllowAny]
+class PublicationList(APIView):
+    def get(self, request, *args, **kwargs):
+        selected_group = request.GET.get('group')
+        selected_author = request.GET.get('author')
+        selected_source = request.GET.get('source')
 
-    def get_queryset(self):
-        queryset = Publication.objects.all()
-        
-        group_id = self.request.query_params.get('group')
-        if group_id:
-            queryset = queryset.filter(author__research_group__id=group_id)
-            
-        author_id = self.request.query_params.get('author')
-        if author_id:
-            queryset = queryset.filter(author__id=author_id)
-            
-        source = self.request.query_params.get('source')
-        if source:
-            queryset = queryset.filter(source=source)
-            
-        return queryset.distinct()
+        publications = Publication.objects.all()
+
+        # Filter by research group via authors
+        if selected_group:
+            publications = publications.filter(authorpublication__author__research_group__id=selected_group)
+        if selected_author:
+            publications = publications.filter(authorpublication__author__id=selected_author)
+        if selected_source:
+            publications = publications.filter(source=selected_source)
+
+        publications = publications.distinct()
+
+        research_groups = ResearchGroup.objects.all()
+        authors = Author.objects.all()
+
+        pub_serializer = PublicationSerializer(publications, many=True)
+        grp_serializer = ResearchGroupSerializer(research_groups, many=True)
+        author_serializer = AuthorSerializer(authors, many=True)
+
+        return Response({
+            'publications': pub_serializer.data,
+            'research_groups': grp_serializer.data,
+            'authors': author_serializer.data
+        })
+
 
 class FileUploadView(BaseAPIView):
     parser_classes = [parsers.MultiPartParser, parsers.FormParser]
