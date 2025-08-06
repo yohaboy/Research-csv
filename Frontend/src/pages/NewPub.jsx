@@ -2,8 +2,11 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { format } from 'date-fns';
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid
-} from 'recharts'; 
+  BarChart, Bar,
+  AreaChart, Area,
+  LineChart, Line,
+  XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
+} from 'recharts';
 
 const NewPublicationsCount = () => {
   const [sinceDate, setSinceDate] = useState('');
@@ -12,6 +15,7 @@ const NewPublicationsCount = () => {
   const [chartData, setChartData] = useState([]);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [chartType, setChartType] = useState('bar'); // 'bar' | 'area' | 'line'
 
   const fetchNewPublications = async (date) => {
     setIsLoading(true);
@@ -21,9 +25,9 @@ const NewPublicationsCount = () => {
       const response = await axios.get('http://127.0.0.1:8000/api/stats/new-papers/', {
         params: { since: date },
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/json'
-        }
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/json',
+        },
       });
       setCount(response.data.count);
       setPapers(response.data.papers);
@@ -41,7 +45,7 @@ const NewPublicationsCount = () => {
   const generateChartData = (papers) => {
     const counts = {};
 
-    papers.forEach(paper => {
+    papers.forEach((paper) => {
       const date = format(new Date(paper.publication_date), 'yyyy-MM-dd');
       counts[date] = (counts[date] || 0) + 1;
     });
@@ -56,10 +60,50 @@ const NewPublicationsCount = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!sinceDate) {
-      setError("Please enter a date");
+      setError('Please enter a date');
       return;
     }
     fetchNewPublications(sinceDate);
+  };
+
+  const renderChart = () => {
+    if (chartType === 'bar') {
+      return (
+        <BarChart data={chartData}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="date" />
+          <YAxis allowDecimals={false} />
+          <Tooltip />
+          <Bar dataKey="count" fill="#3b82f6" />
+        </BarChart>
+      );
+    }
+
+    if (chartType === 'area') {
+      return (
+        <AreaChart data={chartData}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="date" />
+          <YAxis allowDecimals={false} />
+          <Tooltip />
+          <Area type="monotone" dataKey="count" stroke="#3b82f6" fill="#bfdbfe" />
+        </AreaChart>
+      );
+    }
+
+    if (chartType === 'line') {
+      return (
+        <LineChart data={chartData}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="date" />
+          <YAxis allowDecimals={false} />
+          <Tooltip />
+          <Line type="monotone" dataKey="count" stroke="#3b82f6" strokeWidth={2} />
+        </LineChart>
+      );
+    }
+
+    return null;
   };
 
   return (
@@ -95,6 +139,36 @@ const NewPublicationsCount = () => {
             </button>
           </form>
 
+          {/* Chart type buttons */}
+          {chartData.length > 0 && (
+            <div className="mt-6 flex justify-center space-x-4">
+              <button
+                onClick={() => setChartType('bar')}
+                className={`px-4 py-2 rounded ${
+                  chartType === 'bar' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800'
+                }`}
+              >
+                Bar Chart
+              </button>
+              <button
+                onClick={() => setChartType('area')}
+                className={`px-4 py-2 rounded ${
+                  chartType === 'area' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800'
+                }`}
+              >
+                Area Chart
+              </button>
+              <button
+                onClick={() => setChartType('line')}
+                className={`px-4 py-2 rounded ${
+                  chartType === 'line' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800'
+                }`}
+              >
+                Line Chart
+              </button>
+            </div>
+          )}
+
           {error && (
             <div className="mt-4 bg-red-50 border-l-4 border-red-400 p-4">
               <p className="text-sm text-red-700">{error}</p>
@@ -111,19 +185,8 @@ const NewPublicationsCount = () => {
 
           {/* Chart Section */}
           {chartData.length > 0 && (
-            <div className="mt-8">
-              <h2 className="text-xl font-semibold text-gray-800 text-center mb-4">
-                Publications Over Time
-              </h2>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis allowDecimals={false} />
-                  <Tooltip />
-                  <Bar dataKey="count" fill="#3b82f6" />
-                </BarChart>
-              </ResponsiveContainer>
+            <div className="mt-8" style={{ width: '100%', height: 300 }}>
+              <ResponsiveContainer>{renderChart()}</ResponsiveContainer>
             </div>
           )}
 
@@ -131,10 +194,14 @@ const NewPublicationsCount = () => {
           {papers.length > 0 ? (
             <div className="mt-6 grid grid-cols-1 gap-4">
               {papers.map((paper) => (
-                <div key={paper.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
+                <div
+                  key={paper.id}
+                  className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow"
+                >
                   <h3 className="text-lg font-semibold text-gray-800 mb-2">{paper.title}</h3>
                   <p className="text-sm text-gray-600 mb-1">
-                    <span className="font-medium">Date:</span> {format(new Date(paper.publication_date), 'MMMM d, yyyy')}
+                    <span className="font-medium">Date:</span>{' '}
+                    {format(new Date(paper.publication_date), 'MMMM d, yyyy')}
                   </p>
                   {paper.keywords && (
                     <p className="text-sm text-gray-600 mb-1">
@@ -147,9 +214,9 @@ const NewPublicationsCount = () => {
                     </p>
                   )}
                   {paper.url && (
-                    <a 
-                      href={paper.url} 
-                      target="_blank" 
+                    <a
+                      href={paper.url}
+                      target="_blank"
                       rel="noopener noreferrer"
                       className="inline-block mt-2 text-sm text-blue-600 hover:text-blue-800 hover:underline"
                     >
@@ -159,10 +226,12 @@ const NewPublicationsCount = () => {
                 </div>
               ))}
             </div>
-          ) : count === 0 && (
-            <div className="mt-4 bg-gray-50 border-l-4 border-gray-400 p-4">
-              <p className="text-sm text-gray-700 text-center">No new papers found.</p>
-            </div>
+          ) : (
+            count === 0 && (
+              <div className="mt-4 bg-gray-50 border-l-4 border-gray-400 p-4">
+                <p className="text-sm text-gray-700 text-center">No new papers found.</p>
+              </div>
+            )
           )}
         </div>
       </div>

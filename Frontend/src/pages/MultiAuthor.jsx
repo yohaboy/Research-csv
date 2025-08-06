@@ -1,8 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  BarChart, Bar,
+  PieChart, Pie, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
+
+const COLORS = [
+  '#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe', '#dbeafe',
+  '#f87171', '#fb7185', '#f43f5e', '#e11d48', '#be123c'
+];
 
 const GroupAuthorMultiGroupChart = () => {
   const [groupData, setGroupData] = useState({});
@@ -10,25 +17,28 @@ const GroupAuthorMultiGroupChart = () => {
   const [groups, setGroups] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [chartType, setChartType] = useState('bar'); // 'bar' | 'pie'
 
   const fetchGroupData = async () => {
     setIsLoading(true);
     setError(null);
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://127.0.0.1:8000/api/stats/group-author-multi-group/', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/json'
+      const response = await axios.get(
+        'http://127.0.0.1:8000/api/stats/group-author-multi-group/',
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json',
+          },
         }
-      });
+      );
 
       const data = response.data.data || {};
       setGroupData(data);
       const authorsSet = new Set();
       const processed = [];
 
-      // Transform into chart data format
       Object.entries(data).forEach(([groupName, authors]) => {
         const row = { group: groupName };
         Object.entries(authors).forEach(([author, count]) => {
@@ -40,7 +50,6 @@ const GroupAuthorMultiGroupChart = () => {
 
       setChartData(processed);
       setGroups([...authorsSet]);
-
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to fetch data');
       setChartData([]);
@@ -53,6 +62,59 @@ const GroupAuthorMultiGroupChart = () => {
     fetchGroupData();
   }, []);
 
+  const renderChart = () => {
+    if (chartType === 'bar') {
+      return (
+        <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 100 }}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="group" angle={-45} textAnchor="end" interval={0} height={100} />
+          <YAxis allowDecimals={false} />
+          <Tooltip />
+          <Legend verticalAlign="top" height={36} />
+          {groups.map((author, index) => (
+            <Bar
+              key={author}
+              dataKey={author}
+              stackId="a"
+              fill={`hsl(${(index * 37) % 360}, 70%, 60%)`}
+            />
+          ))}
+        </BarChart>
+      );
+    }
+
+    if (chartType === 'pie') {
+      const authorTotals = groups
+        .map((author) => ({
+          name: author,
+          value: chartData.reduce((sum, row) => sum + (row[author] || 0), 0),
+        }))
+        .filter((d) => d.value > 0);
+
+      return (
+        <PieChart>
+          <Tooltip />
+          <Legend verticalAlign="top" height={36} />
+          <Pie
+            data={authorTotals}
+            dataKey="value"
+            nameKey="name"
+            cx="50%"
+            cy="50%"
+            outerRadius={150}
+            label={(entry) => entry.name}
+          >
+            {authorTotals.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+            ))}
+          </Pie>
+        </PieChart>
+      );
+    }
+
+    return null;
+  };
+
   return (
     <div className="p-8 bg-gray-100 min-h-screen">
       <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">
@@ -63,21 +125,30 @@ const GroupAuthorMultiGroupChart = () => {
       {error && <p className="text-center text-red-500">{error}</p>}
 
       {!isLoading && !error && chartData.length > 0 && (
-        <ResponsiveContainer width="100%" height={500}>
-          <BarChart
-            data={chartData}
-            margin={{ top: 20, right: 30, left: 20, bottom: 100 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="group" angle={-45} textAnchor="end" interval={0} height={100} />
-            <YAxis allowDecimals={false} />
-            <Tooltip />
-            <Legend verticalAlign="top" height={36} />
-            {groups.map((author, index) => (
-              <Bar key={author} dataKey={author} stackId="a" fill={`hsl(${index * 37 % 360}, 70%, 60%)`} />
-            ))}
-          </BarChart>
-        </ResponsiveContainer>
+        <>
+          <div className="flex justify-center space-x-4 mb-6">
+            <button
+              onClick={() => setChartType('bar')}
+              className={`px-4 py-2 rounded ${
+                chartType === 'bar' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800'
+              }`}
+            >
+              Bar Chart
+            </button>
+            <button
+              onClick={() => setChartType('pie')}
+              className={`px-4 py-2 rounded ${
+                chartType === 'pie' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800'
+              }`}
+            >
+              Pie Chart
+            </button>
+          </div>
+
+          <ResponsiveContainer width="100%" height={500}>
+            {renderChart()}
+          </ResponsiveContainer>
+        </>
       )}
     </div>
   );
