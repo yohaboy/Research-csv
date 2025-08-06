@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { format } from 'date-fns';
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid
+} from 'recharts'; 
 
 const NewPublicationsCount = () => {
   const [sinceDate, setSinceDate] = useState('');
   const [count, setCount] = useState(null);
   const [papers, setPapers] = useState([]);
+  const [chartData, setChartData] = useState([]);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -23,13 +27,30 @@ const NewPublicationsCount = () => {
       });
       setCount(response.data.count);
       setPapers(response.data.papers);
+      generateChartData(response.data.papers);
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to fetch new publications');
       setCount(null);
       setPapers([]);
+      setChartData([]);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const generateChartData = (papers) => {
+    const counts = {};
+
+    papers.forEach(paper => {
+      const date = format(new Date(paper.publication_date), 'yyyy-MM-dd');
+      counts[date] = (counts[date] || 0) + 1;
+    });
+
+    const data = Object.entries(counts)
+      .sort(([a], [b]) => new Date(a) - new Date(b))
+      .map(([date, count]) => ({ date, count }));
+
+    setChartData(data);
   };
 
   const handleSubmit = (e) => {
@@ -43,12 +64,12 @@ const NewPublicationsCount = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden md:max-w-2xl">
+      <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-md overflow-hidden">
         <div className="p-8">
           <h1 className="text-2xl font-bold text-gray-800 text-center mb-6">
             New Papers Since Date
           </h1>
-          
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="since" className="block text-sm font-medium text-gray-700 mb-1">
@@ -64,7 +85,7 @@ const NewPublicationsCount = () => {
                 placeholder="e.g. 2023-01-01"
               />
             </div>
-            
+
             <button
               type="submit"
               disabled={isLoading}
@@ -76,16 +97,7 @@ const NewPublicationsCount = () => {
 
           {error && (
             <div className="mt-4 bg-red-50 border-l-4 border-red-400 p-4">
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm text-red-700">{error}</p>
-                </div>
-              </div>
+              <p className="text-sm text-red-700">{error}</p>
             </div>
           )}
 
@@ -97,6 +109,25 @@ const NewPublicationsCount = () => {
             </div>
           )}
 
+          {/* Chart Section */}
+          {chartData.length > 0 && (
+            <div className="mt-8">
+              <h2 className="text-xl font-semibold text-gray-800 text-center mb-4">
+                Publications Over Time
+              </h2>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis allowDecimals={false} />
+                  <Tooltip />
+                  <Bar dataKey="count" fill="#3b82f6" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          {/* Paper Cards */}
           {papers.length > 0 ? (
             <div className="mt-6 grid grid-cols-1 gap-4">
               {papers.map((paper) => (
