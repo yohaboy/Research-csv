@@ -24,7 +24,7 @@ const TotalPapersPerGroup = () => {
   const [groupPapers, setGroupPapers] = useState([]);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [chartType, setChartType] = useState('pie'); // 'pie' or 'area'
+  const [chartType, setChartType] = useState('pie');
 
   const fetchGroupData = async () => {
     setIsLoading(true);
@@ -51,6 +51,41 @@ const TotalPapersPerGroup = () => {
     setGroupPapers(papers);
   };
 
+  const handleExport = async (type) => {
+    const endpoint =
+      type === 'pdf'
+        ? 'http://127.0.0.1:8000/api/export-papers-per-group-pdf/'
+        : 'http://127.0.0.1:8000/api/export-papers-per-group-excel/';
+
+    const token = localStorage.getItem('token');
+
+    try {
+      const response = await axios.get(endpoint, {
+        responseType: 'blob',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const blob = new Blob([response.data], {
+        type:
+          type === 'pdf'
+            ? 'application/pdf'
+            : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
+
+      const extension = type === 'pdf' ? 'pdf' : 'xlsx';
+      const link = document.createElement('a');
+      link.href = window.URL.createObjectURL(blob);
+      link.download = `all_groups_papers.${extension}`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (err) {
+      alert(`Failed to export ${type.toUpperCase()}`);
+    }
+  };
+
   useEffect(() => {
     fetchGroupData();
   }, []);
@@ -67,6 +102,21 @@ const TotalPapersPerGroup = () => {
           <h1 className="text-3xl font-extrabold text-gray-900 text-center mb-6">
             Total Papers Per Research Group
           </h1>
+
+          <div className="flex justify-center mb-6 space-x-4">
+            <button
+              onClick={() => handleExport('pdf')}
+              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded shadow"
+            >
+              Export All to PDF
+            </button>
+            <button
+              onClick={() => handleExport('excel')}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow"
+            >
+              Export All to Excel
+            </button>
+          </div>
 
           <div className="flex justify-center mb-8 space-x-4">
             <button
