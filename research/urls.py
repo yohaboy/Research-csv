@@ -1,7 +1,7 @@
 from django.urls import path
 from . import views
 from .api import (
-    AuthorList, FileUploadView, IndexAPIView, ResearchGroupList, PublicationList,
+    AuthorList, ExportAllExcel, ExportAllPDF, FileUploadView, IndexAPIView, ResearchGroupList, PublicationList,
     NewPublicationsCount, KeywordCounts, MultiGroupPapersCount,
     GroupAuthorMultiGroup, TotalPapersPerGroup, KeywordCountsPerGroup,
     TriggerFetchPublications, CheckTaskStatus
@@ -36,4 +36,6 @@ urlpatterns = [
     path('api/stats/keywords-per-group/', KeywordCountsPerGroup.as_view(), name='api_keywords_per_group'),
     # path('api/fetch-publications/', TriggerFetchPublications.as_view(), name='api_fetch_publications'),
     path('api/check-task-status/', CheckTaskStatus.as_view(), name='api_check_task_status'),
+    path('api/export-pdf/', ExportAllPDF.as_view(), name='export_pdf'),
+    path('api/export-excel/', ExportAllExcel.as_view(), name='export_excel'),
 ] 

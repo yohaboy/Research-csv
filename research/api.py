@@ -1,19 +1,29 @@
 from celery import chain
+
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework import status, parsers
 from rest_framework.views import APIView
-
 from rest_framework.permissions import IsAuthenticated ,AllowAny
+
 from django.db.models import Q
 from datetime import datetime
 from .models import Author, ResearchGroup, Publication, AuthorPublication
+from io import BytesIO
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
+from reportlab.lib.styles import getSampleStyleSheet
+from django.http import HttpResponse
+from .models import Author, ResearchGroup, Publication, AuthorPublication
+import openpyxl
+from openpyxl.utils import get_column_letter
 from .serializers import (
     AuthorSerializer,
     ResearchGroupSerializer,
     PublicationSerializer,
     AuthorPublicationSerializer
 )
+
+
 
 class BaseAPIView(APIView):
     permission_classes = [AllowAny]
@@ -264,3 +274,123 @@ class CheckTaskStatus(BaseAPIView):
             "status": result.status,
             "ready": result.ready()
         })
+    
+class ExportAllExcel(APIView):
+    def get(self, request):
+        def strip_tz(value):
+            return value.replace(tzinfo=None) if hasattr(value, 'tzinfo') else value
+
+        wb = openpyxl.Workbook()
+
+        # Sheet 1: Research Groups
+        ws1 = wb.active
+        ws1.title = "Research Groups"
+        ws1.append(["ID", "Name"])
+        research_groups = ResearchGroup.objects.all()
+        for group in research_groups:
+            ws1.append([group.id, group.name])
+
+        # Sheet 2: Authors
+        ws2 = wb.create_sheet("Authors")
+        ws2.append([
+            "ID", "First Name", "Last Name", "Group", "Scopus ID",
+            "Scholar ID", "ORCID ID", "Staff URL"
+        ])
+        authors = Author.objects.select_related('research_group').all()
+        for author in authors:
+            ws2.append([
+                author.id, author.first_name, author.last_name,
+                author.research_group.name if author.research_group else "N/A",
+                author.scopus_id, author.scholar_id, author.orcid_id, author.staff_url
+            ])
+
+        # Sheet 3: Publications
+        ws3 = wb.create_sheet("Publications")
+        ws3.append([
+            "ID", "Title", "Publication Date", "Keywords", "Abstract", "Date Added", "URL", "Source"
+        ])
+        publications = Publication.objects.all()
+        for pub in publications:
+            ws3.append([
+                pub.id,
+                pub.title,
+                pub.publication_date,
+                pub.keywords,
+                pub.abstract,
+                strip_tz(pub.date_added) if pub.date_added else '',
+                pub.url,
+                pub.source
+            ])
+
+        # Sheet 4: Author-Publication
+        ws4 = wb.create_sheet("Author-Publication")
+        ws4.append(["ID", "Author", "Publication", "Order"])
+        links = AuthorPublication.objects.select_related('author', 'publication').all()
+        for ap in links:
+            ws4.append([
+                ap.id, str(ap.author), ap.publication.title, ap.author_order
+            ])
+
+        # Auto-fit column width
+        for sheet in wb.worksheets:
+            for col in sheet.columns:
+                max_length = max(len(str(cell.value)) if cell.value else 0 for cell in col)
+                col_letter = get_column_letter(col[0].column)
+                sheet.column_dimensions[col_letter].width = max(10, min(max_length + 2, 50))
+
+        # Prepare response
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = 'attachment; filename=all_data.xlsx'
+        wb.save(response)
+        return response
+
+
+class ExportAllPDF(APIView):
+    def get(self, request):
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer)
+        styles = getSampleStyleSheet()
+        elements = []
+
+        # Research Groups
+        elements.append(Paragraph("Research Groups", styles['Title']))
+        for group in ResearchGroup.objects.all():
+            elements.append(Paragraph(f"- {group.name}", styles['Normal']))
+        elements.append(PageBreak())
+
+        # Authors
+        elements.append(Paragraph("Authors", styles['Title']))
+        for author in Author.objects.select_related('research_group'):
+            elements.append(Paragraph(
+                f"{author.first_name} {author.last_name} | Group: {author.research_group.name} | "
+                f"Scopus: {author.scopus_id or 'N/A'} | Scholar: {author.scholar_id or 'N/A'} | ORCID: {author.orcid_id or 'N/A'}",
+                styles['Normal']
+            ))
+        elements.append(PageBreak())
+
+        # Publications
+        elements.append(Paragraph("Publications", styles['Title']))
+        for pub in Publication.objects.all():
+            elements.append(Paragraph(f"Title: {pub.title}", styles['Heading3']))
+            elements.append(Paragraph(f"Date: {pub.publication_date}", styles['Normal']))
+            elements.append(Paragraph(f"Source: {pub.source}", styles['Normal']))
+            elements.append(Paragraph(f"URL: {pub.url}", styles['Normal']))
+            elements.append(Paragraph(f"Keywords: {pub.keywords}", styles['Normal']))
+            elements.append(Paragraph(f"Abstract: {pub.abstract}", styles['Normal']))
+            elements.append(Spacer(1, 12))
+        elements.append(PageBreak())
+
+        # Author-Publication Links
+        elements.append(Paragraph("Author-Publication Links", styles['Title']))
+        for ap in AuthorPublication.objects.select_related('author', 'publication'):
+            elements.append(Paragraph(
+                f"Author: {ap.author} | Publication: {ap.publication.title} | Order: {ap.author_order}",
+                styles['Normal']
+            ))
+
+        doc.build(elements)
+        buffer.seek(0)
+        return HttpResponse(buffer, content_type='application/pdf')
+    
