@@ -19,6 +19,10 @@ const GroupAuthorMultiGroupChart = () => {
   const [error, setError] = useState(null);
   const [chartType, setChartType] = useState('bar'); // 'bar' | 'pie'
 
+  useEffect(() => {
+    fetchGroupData();
+  }, []);
+
   const fetchGroupData = async () => {
     setIsLoading(true);
     setError(null);
@@ -58,9 +62,37 @@ const GroupAuthorMultiGroupChart = () => {
     }
   };
 
-  useEffect(() => {
-    fetchGroupData();
-  }, []);
+  const handleExport = async (type) => {
+    const token = localStorage.getItem('token');
+    const url =
+      type === 'excel'
+        ? 'http://127.0.0.1:8000/api/export-group-author-multigroup-excel/'
+        : 'http://127.0.0.1:8000/api/export-group-author-multigroup-pdf/';
+
+    try {
+      const response = await axios.get(url, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        responseType: 'blob',
+      });
+
+      const blob = new Blob([response.data], {
+        type:
+          type === 'excel'
+            ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            : 'application/pdf',
+      });
+      const link = document.createElement('a');
+      link.href = window.URL.createObjectURL(blob);
+      link.download = `group-author-multigroup.${type === 'excel' ? 'xlsx' : 'pdf'}`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      console.error(`Export ${type} failed`, error);
+    }
+  };
 
   const renderChart = () => {
     if (chartType === 'bar') {
@@ -126,7 +158,7 @@ const GroupAuthorMultiGroupChart = () => {
 
       {!isLoading && !error && chartData.length > 0 && (
         <>
-          <div className="flex justify-center space-x-4 mb-6">
+          <div className="flex flex-wrap justify-center gap-4 mb-6">
             <button
               onClick={() => setChartType('bar')}
               className={`px-4 py-2 rounded ${
@@ -142,6 +174,18 @@ const GroupAuthorMultiGroupChart = () => {
               }`}
             >
               Pie Chart
+            </button>
+            <button
+              onClick={() => handleExport('excel')}
+              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+            >
+              Export Excel
+            </button>
+            <button
+              onClick={() => handleExport('pdf')}
+              className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+            >
+              Export PDF
             </button>
           </div>
 

@@ -563,4 +563,93 @@ class ExportMultiGroupPDF(APIView):
 
         c.save()
         return response
+    
+class ExportGroupAuthorMultiGroupExcel(APIView):
+    def get(self, request):
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Group Author Multi-Group"
+
+        ws.append(["Group", "Author", "Multi-Group Publication Count"])
+
+        for group in ResearchGroup.objects.all():
+            authors = Author.objects.filter(research_group=group)
+
+            for author in authors:
+                count = 0
+                for ap in author.authorpublication_set.all():
+                    pub = ap.publication
+                    groups = set(
+                        pub.authorpublication_set
+                        .select_related('author__research_group')
+                        .values_list('author__research_group__name', flat=True)
+                    )
+                    if len(groups) > 1:
+                        count += 1
+
+                if count > 0:
+                    ws.append([group.name, str(author), count])
+
+        # Auto column width
+        for col in ws.columns:
+            max_length = max(len(str(cell.value)) if cell.value else 0 for cell in col)
+            col_letter = get_column_letter(col[0].column)
+            ws.column_dimensions[col_letter].width = max_length + 2
+
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = 'attachment; filename=group_author_multigroup.xlsx'
+        wb.save(response)
+        return response
+
+
+class ExportGroupAuthorMultiGroupPDF(APIView):
+    def get(self, request):
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = 'attachment; filename=group_author_multigroup.pdf'
+
+        c = canvas.Canvas(response, pagesize=letter)
+        width, height = letter
+        y = height - 40
+        c.setFont("Helvetica-Bold", 16)
+        c.drawString(40, y, "Multi-Group Publications per Author by Group")
+        y -= 30
+        c.setFont("Helvetica", 12)
+
+        for group in ResearchGroup.objects.all():
+            authors = Author.objects.filter(research_group=group)
+            printed_group = False
+
+            for author in authors:
+                count = 0
+                for ap in author.authorpublication_set.all():
+                    pub = ap.publication
+                    groups = set(
+                        pub.authorpublication_set
+                        .select_related('author__research_group')
+                        .values_list('author__research_group__name', flat=True)
+                    )
+                    if len(groups) > 1:
+                        count += 1
+
+                if count > 0:
+                    if y < 50:
+                        c.showPage()
+                        y = height - 40
+                        c.setFont("Helvetica", 12)
+
+                    if not printed_group:
+                        c.setFont("Helvetica-Bold", 13)
+                        c.drawString(40, y, f"Group: {group.name}")
+                        y -= 20
+                        printed_group = True
+                        c.setFont("Helvetica", 12)
+
+                    c.drawString(60, y, f"{author} — {count} publications")
+                    y -= 15
+
+        c.save()
+        return response
+
 
