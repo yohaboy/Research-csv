@@ -6,6 +6,9 @@ from rest_framework import status, parsers
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated ,AllowAny
 
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+
 from django.db.models import Q
 from datetime import datetime
 from .models import Author, ResearchGroup, Publication, AuthorPublication
@@ -393,4 +396,78 @@ class ExportAllPDF(APIView):
         doc.build(elements)
         buffer.seek(0)
         return HttpResponse(buffer, content_type='application/pdf')
-    
+
+
+class ExportFilteredExcel(APIView):
+    def get(self, request):
+        since = request.query_params.get('since')
+        try:
+            since_date = datetime.strptime(since, '%Y-%m-%d').date()
+        except Exception:
+            return Response({'error': 'Invalid date format, use YYYY-MM-DD'}, status=400)
+
+        publications = Publication.objects.filter(publication_date__gt=since_date)
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Filtered Publications"
+        ws.append(["ID", "Title", "Publication Date", "Keywords", "Abstract", "URL", "Source"])
+
+        for pub in publications:
+            ws.append([
+                pub.id, pub.title, pub.publication_date.strftime('%Y-%m-%d'),
+                pub.keywords, pub.abstract, pub.url, pub.source
+            ])
+
+        # Auto-width
+        for col in ws.columns:
+            max_length = max(len(str(cell.value)) if cell.value else 0 for cell in col)
+            col_letter = get_column_letter(col[0].column)
+            ws.column_dimensions[col_letter].width = max(10, min(max_length + 2, 50))
+
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        )
+        response['Content-Disposition'] = 'attachment; filename=filtered_publications.xlsx'
+        wb.save(response)
+        return response
+
+
+
+class ExportFilteredPDF(APIView):
+    def get(self, request):
+        since = request.query_params.get('since')
+        try:
+            since_date = datetime.strptime(since, '%Y-%m-%d').date()
+        except Exception:
+            return Response({'error': 'Invalid date format, use YYYY-MM-DD'}, status=400)
+
+        publications = Publication.objects.filter(publication_date__gt=since_date)
+
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = 'attachment; filename=filtered_publications.pdf'
+
+        c = canvas.Canvas(response, pagesize=letter)
+        width, height = letter
+        y = height - 40
+        c.setFont("Helvetica-Bold", 16)
+        c.drawString(40, y, "Filtered Publications Since " + since)
+        c.setFont("Helvetica", 12)
+        y -= 30
+
+        for pub in publications:
+            if y < 50:
+                c.showPage()
+                y = height - 40
+            c.drawString(40, y, f"Title: {pub.title}")
+            y -= 15
+            c.drawString(40, y, f"Date: {pub.publication_date.strftime('%Y-%m-%d')}")
+            y -= 15
+            if pub.abstract:
+                abstract = (pub.abstract[:80] + '...') if len(pub.abstract) > 80 else pub.abstract
+                c.drawString(40, y, f"Abstract: {abstract}")
+                y -= 20
+            else:
+                y -= 10
+        c.save()
+        return response

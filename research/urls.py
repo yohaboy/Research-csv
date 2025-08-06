@@ -1,7 +1,7 @@
 from django.urls import path
 from . import views
 from .api import (
-    AuthorList, ExportAllExcel, ExportAllPDF, FileUploadView, IndexAPIView, ResearchGroupList, PublicationList,
+    AuthorList, ExportAllExcel, ExportAllPDF, ExportFilteredExcel, ExportFilteredPDF, FileUploadView, IndexAPIView, ResearchGroupList, PublicationList,
     NewPublicationsCount, KeywordCounts, MultiGroupPapersCount,
     GroupAuthorMultiGroup, TotalPapersPerGroup, KeywordCountsPerGroup,
     TriggerFetchPublications, CheckTaskStatus
@@ -38,4 +38,9 @@ urlpatterns = [
     path('api/check-task-status/', CheckTaskStatus.as_view(), name='api_check_task_status'),
     path('api/export-pdf/', ExportAllPDF.as_view(), name='export_pdf'),
     path('api/export-excel/', ExportAllExcel.as_view(), name='export_excel'),
+
+    path('api/export-excel-filtered/', ExportFilteredExcel.as_view(), name='export_excel_filtered'),
+    path('api/export-pdf-filtered/', ExportFilteredPDF.as_view(), name='export_pdf_filtered'),
+
+
 ] 

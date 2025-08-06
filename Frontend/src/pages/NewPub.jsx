@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import axios from 'axios';
 import { format } from 'date-fns';
 import {
@@ -64,6 +64,58 @@ const NewPublicationsCount = () => {
       return;
     }
     fetchNewPublications(sinceDate);
+  };
+
+  const downloadExcelFiltered = async () => {
+    if (!sinceDate) {
+      alert('Please enter a date first');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get('http://127.0.0.1:8000/api/export-excel-filtered/', {
+        params: { since: sinceDate },
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: 'blob',
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `filtered_publications_${sinceDate}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      alert('Failed to download filtered Excel file.');
+    }
+  };
+
+  const downloadPdfFiltered = async () => {
+    if (!sinceDate) {
+      alert('Please enter a date first');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get('http://127.0.0.1:8000/api/export-pdf-filtered/', {
+        params: { since: sinceDate },
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: 'blob',
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `filtered_publications_${sinceDate}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      alert('Failed to download filtered PDF file.');
+    }
   };
 
   const renderChart = () => {
@@ -141,32 +193,50 @@ const NewPublicationsCount = () => {
 
           {/* Chart type buttons */}
           {chartData.length > 0 && (
-            <div className="mt-6 flex justify-center space-x-4">
-              <button
-                onClick={() => setChartType('bar')}
-                className={`px-4 py-2 rounded ${
-                  chartType === 'bar' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800'
-                }`}
-              >
-                Bar Chart
-              </button>
-              <button
-                onClick={() => setChartType('area')}
-                className={`px-4 py-2 rounded ${
-                  chartType === 'area' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800'
-                }`}
-              >
-                Area Chart
-              </button>
-              <button
-                onClick={() => setChartType('line')}
-                className={`px-4 py-2 rounded ${
-                  chartType === 'line' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800'
-                }`}
-              >
-                Line Chart
-              </button>
-            </div>
+            <>
+              <div className="mt-6 flex justify-center space-x-4">
+                <button
+                  onClick={() => setChartType('bar')}
+                  className={`px-4 py-2 rounded ${
+                    chartType === 'bar' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800'
+                  }`}
+                >
+                  Bar Chart
+                </button>
+                <button
+                  onClick={() => setChartType('area')}
+                  className={`px-4 py-2 rounded ${
+                    chartType === 'area' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800'
+                  }`}
+                >
+                  Area Chart
+                </button>
+                <button
+                  onClick={() => setChartType('line')}
+                  className={`px-4 py-2 rounded ${
+                    chartType === 'line' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800'
+                  }`}
+                >
+                  Line Chart
+                </button>
+              </div>
+
+              {/* Export buttons */}
+              <div className="mt-6 flex justify-center space-x-4">
+                <button
+                  onClick={downloadExcelFiltered}
+                  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                >
+                  Export Filtered to Excel
+                </button>
+                <button
+                  onClick={downloadPdfFiltered}
+                  className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                >
+                  Export Filtered to PDF
+                </button>
+              </div>
+            </>
           )}
 
           {error && (
