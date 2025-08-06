@@ -15,7 +15,7 @@ const MultiGroupPapersCount = () => {
   const [chartData, setChartData] = useState([]);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [chartType, setChartType] = useState('bar'); // 'bar' | 'area' | 'pie'
+  const [chartType, setChartType] = useState('bar');
 
   const fetchMultiGroupPapers = async () => {
     setIsLoading(true);
@@ -59,6 +59,30 @@ const MultiGroupPapersCount = () => {
   useEffect(() => {
     fetchMultiGroupPapers();
   }, []);
+
+  const handleExport = async (type) => {
+    const token = localStorage.getItem('token');
+    const url = type === 'excel'
+      ? 'http://127.0.0.1:8000/api/export-multi-group-excel/'
+      : 'http://127.0.0.1:8000/api/export-multi-group-pdf/';
+
+    try {
+      const response = await axios.get(url, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        responseType: 'blob',
+      });
+
+      const blob = new Blob([response.data], { type: type === 'excel' ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : 'application/pdf' });
+      const link = document.createElement('a');
+      link.href = window.URL.createObjectURL(blob);
+      link.download = `multi-group-publications.${type === 'excel' ? 'xlsx' : 'pdf'}`;
+      link.click();
+    } catch (error) {
+      console.error(`Export ${type} failed`, error);
+    }
+  };
 
   const renderChart = () => {
     if (chartType === 'bar') {
@@ -119,7 +143,7 @@ const MultiGroupPapersCount = () => {
           </h1>
 
           {/* Chart type buttons */}
-          <div className="mb-6 flex justify-center space-x-4">
+          <div className="mb-6 flex flex-wrap justify-center gap-4">
             <button
               onClick={() => setChartType('bar')}
               className={`px-4 py-2 rounded ${
@@ -143,6 +167,18 @@ const MultiGroupPapersCount = () => {
               }`}
             >
               Pie Chart
+            </button>
+            <button
+              onClick={() => handleExport('excel')}
+              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+            >
+              Export to Excel
+            </button>
+            <button
+              onClick={() => handleExport('pdf')}
+              className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+            >
+              Export to PDF
             </button>
           </div>
 

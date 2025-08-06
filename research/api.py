@@ -471,3 +471,96 @@ class ExportFilteredPDF(APIView):
                 y -= 10
         c.save()
         return response
+    
+
+class ExportMultiGroupExcel(APIView):
+    def get(self, request):
+        multi_group_pub_ids = set()
+        for pub in Publication.objects.all():
+            groups = set(
+                pub.authorpublication_set
+                .select_related('author__research_group')
+                .values_list('author__research_group__name', flat=True)
+            )
+            if len(groups) > 1:
+                multi_group_pub_ids.add(pub.id)
+
+        publications = Publication.objects.filter(id__in=multi_group_pub_ids)
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Multi-Group Publications"
+
+        ws.append(["ID", "Title", "Publication Date", "Keywords", "Abstract", "URL", "Source"])
+
+        for pub in publications:
+            ws.append([
+                pub.id,
+                pub.title,
+                pub.publication_date.strftime('%Y-%m-%d') if pub.publication_date else "",
+                pub.keywords,
+                pub.abstract,
+                pub.url,
+                pub.source
+            ])
+
+        # Adjust column widths
+        for col in ws.columns:
+            max_length = max(len(str(cell.value)) if cell.value else 0 for cell in col)
+            col_letter = get_column_letter(col[0].column)
+            ws.column_dimensions[col_letter].width = max(10, min(max_length + 2, 50))
+
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = 'attachment; filename=multi_group_publications.xlsx'
+        wb.save(response)
+        return response
+
+
+class ExportMultiGroupPDF(APIView):
+    def get(self, request):
+        multi_group_pub_ids = set()
+        for pub in Publication.objects.all():
+            groups = set(
+                pub.authorpublication_set
+                .select_related('author__research_group')
+                .values_list('author__research_group__name', flat=True)
+            )
+            if len(groups) > 1:
+                multi_group_pub_ids.add(pub.id)
+
+        publications = Publication.objects.filter(id__in=multi_group_pub_ids)
+
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = 'attachment; filename=multi_group_publications.pdf'
+
+        c = canvas.Canvas(response, pagesize=letter)
+        width, height = letter
+        y = height - 40
+        c.setFont("Helvetica-Bold", 16)
+        c.drawString(40, y, "Publications with Multiple Research Groups")
+        y -= 30
+        c.setFont("Helvetica", 12)
+
+        for pub in publications:
+            if y < 80:
+                c.showPage()
+                y = height - 40
+                c.setFont("Helvetica", 12)
+
+            c.drawString(40, y, f"Title: {pub.title}")
+            y -= 15
+            c.drawString(40, y, f"Date: {pub.publication_date.strftime('%Y-%m-%d') if pub.publication_date else 'N/A'}")
+            y -= 15
+
+            if pub.abstract:
+                abstract = pub.abstract[:80] + '...' if len(pub.abstract) > 80 else pub.abstract
+                c.drawString(40, y, f"Abstract: {abstract}")
+                y -= 20
+            else:
+                y -= 10
+
+        c.save()
+        return response
+

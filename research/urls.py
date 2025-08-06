@@ -1,7 +1,7 @@
 from django.urls import path
 from . import views
 from .api import (
-    AuthorList, ExportAllExcel, ExportAllPDF, ExportFilteredExcel, ExportFilteredPDF, FileUploadView, IndexAPIView, ResearchGroupList, PublicationList,
+    AuthorList, ExportAllExcel, ExportAllPDF, ExportFilteredExcel, ExportFilteredPDF, ExportMultiGroupExcel, ExportMultiGroupPDF, FileUploadView, IndexAPIView, ResearchGroupList, PublicationList,
     NewPublicationsCount, KeywordCounts, MultiGroupPapersCount,
     GroupAuthorMultiGroup, TotalPapersPerGroup, KeywordCountsPerGroup,
     TriggerFetchPublications, CheckTaskStatus
@@ -42,5 +42,7 @@ urlpatterns = [
     path('api/export-excel-filtered/', ExportFilteredExcel.as_view(), name='export_excel_filtered'),
     path('api/export-pdf-filtered/', ExportFilteredPDF.as_view(), name='export_pdf_filtered'),
 
+    path('api/export-multi-group-excel/', ExportMultiGroupExcel.as_view(), name='export_multi_group_excel'),
+    path('api/export-multi-group-pdf/', ExportMultiGroupPDF.as_view(), name='export_multi_group_pdf'),
 
 ] 
