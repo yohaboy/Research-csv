@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid
+} from 'recharts'; // ← Charting library
 
 const MultiGroupPapersCount = () => {
   const [count, setCount] = useState(null);
   const [publications, setPublications] = useState([]);
+  const [chartData, setChartData] = useState([]); // ← Chart data
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -20,6 +24,7 @@ const MultiGroupPapersCount = () => {
       });
       setCount(response.data.count);
       setPublications(response.data.publications);
+      generateChartData(response.data.publications); // ← Process data for chart
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to fetch multi-group papers');
       setCount(null);
@@ -29,18 +34,33 @@ const MultiGroupPapersCount = () => {
     }
   };
 
+  const generateChartData = (publications) => {
+    const grouped = {};
+
+    publications.forEach(pub => {
+      const date = new Date(pub.publication_date).toISOString().split('T')[0];
+      grouped[date] = (grouped[date] || 0) + 1;
+    });
+
+    const sorted = Object.entries(grouped)
+      .sort(([a], [b]) => new Date(a) - new Date(b))
+      .map(([date, count]) => ({ date, count }));
+
+    setChartData(sorted);
+  };
+
   useEffect(() => {
     fetchMultiGroupPapers();
   }, []);
 
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-md overflow-hidden">
+      <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-md overflow-hidden">
         <div className="p-8 text-center">
           <h1 className="text-2xl font-bold text-gray-800 mb-6">
             Multi-Group Paper Count
           </h1>
-          
+
           {isLoading && (
             <div className="flex justify-center items-center py-8">
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
@@ -49,16 +69,7 @@ const MultiGroupPapersCount = () => {
 
           {error && (
             <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-6">
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm text-red-700">{error}</p>
-                </div>
-              </div>
+              <p className="text-sm text-red-700">{error}</p>
             </div>
           )}
 
@@ -67,6 +78,21 @@ const MultiGroupPapersCount = () => {
               <p className="text-blue-700">
                 Number of papers involving two or more research groups: <strong>{count}</strong>
               </p>
+            </div>
+          )}
+
+          {chartData.length > 0 && (
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold text-gray-800 mb-4">Publications Over Time</h2>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis allowDecimals={false} />
+                  <Tooltip />
+                  <Bar dataKey="count" fill="#3b82f6" />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           )}
 
