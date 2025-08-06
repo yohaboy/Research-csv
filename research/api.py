@@ -6,7 +6,7 @@ from rest_framework import status, parsers
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated ,AllowAny
 
-from reportlab.lib.pagesizes import letter
+from reportlab.lib.pagesizes import letter,A4
 from reportlab.pdfgen import canvas
 
 from django.db.models import Q
@@ -651,5 +651,76 @@ class ExportGroupAuthorMultiGroupPDF(APIView):
 
         c.save()
         return response
+    
+
+class ExportTotalPapersPerGroupExcel(APIView):
+    def get(self, request):
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Papers Per Group"
+        ws.append(["Research Group", "Title", "Date", "Keywords", "URL"])
+
+        for group in ResearchGroup.objects.all():
+            authors = Author.objects.filter(research_group=group)
+            pub_ids = set()
+            for author in authors:
+                pub_ids.update(author.authorpublication_set.values_list('publication_id', flat=True))
+            pubs = Publication.objects.filter(id__in=pub_ids)
+
+            for pub in pubs:
+                ws.append([
+                    group.name,
+                    pub.title,
+                    pub.publication_date.strftime('%Y-%m-%d') if pub.publication_date else '',
+                    pub.keywords or '',
+                    pub.url or ''
+                ])
+
+        buffer = BytesIO()
+        wb.save(buffer)
+        buffer.seek(0)
+
+        response = HttpResponse(buffer, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        filename = f"papers_per_group.xlsx"
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
+
+
+class ExportTotalPapersPerGroupPDF(APIView):
+    def get(self, request):
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4)
+        styles = getSampleStyleSheet()
+        elements = []
+
+        for group in ResearchGroup.objects.all():
+            authors = Author.objects.filter(research_group=group)
+            pub_ids = set()
+            for author in authors:
+                pub_ids.update(author.authorpublication_set.values_list('publication_id', flat=True))
+            pubs = Publication.objects.filter(id__in=pub_ids)
+
+            if pubs.exists():
+                elements.append(Paragraph(f"<b>{group.name}</b>", styles['Heading2']))
+                elements.append(Spacer(1, 8))
+
+                for pub in pubs:
+                    elements.append(Paragraph(f"<b>Title:</b> {pub.title}", styles['Normal']))
+                    if pub.publication_date:
+                        elements.append(Paragraph(f"<b>Date:</b> {pub.publication_date.strftime('%Y-%m-%d')}", styles['Normal']))
+                    if pub.keywords:
+                        elements.append(Paragraph(f"<b>Keywords:</b> {pub.keywords}", styles['Normal']))
+                    if pub.url:
+                        elements.append(Paragraph(f"<b>URL:</b> {pub.url}", styles['Normal']))
+                    elements.append(Spacer(1, 12))
+
+        doc.build(elements)
+
+        buffer.seek(0)
+        response = HttpResponse(buffer, content_type='application/pdf')
+        filename = f"papers_per_group.pdf"
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
+
 
 
