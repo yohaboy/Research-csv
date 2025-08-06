@@ -9,7 +9,14 @@ import {
   Tooltip,
   ResponsiveContainer,
   Legend,
+  PieChart,
+  Pie,
+  Cell,
+  AreaChart,
+  Area,
 } from 'recharts';
+
+const COLORS = ['#3B82F6', '#2563EB', '#1D4ED8', '#1E40AF', '#1E3A8A', '#1E40AF'];
 
 const TotalPapersPerGroup = () => {
   const [groupData, setGroupData] = useState({});
@@ -17,6 +24,7 @@ const TotalPapersPerGroup = () => {
   const [groupPapers, setGroupPapers] = useState([]);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [chartType, setChartType] = useState('pie'); // 'pie' or 'area'
 
   const fetchGroupData = async () => {
     setIsLoading(true);
@@ -47,7 +55,6 @@ const TotalPapersPerGroup = () => {
     fetchGroupData();
   }, []);
 
-  // Prepare data array for Recharts [{name: 'Group1', total: 5}, ...]
   const chartData = Object.entries(groupData).map(([groupName, papers]) => ({
     name: groupName,
     total: papers.length,
@@ -57,9 +64,28 @@ const TotalPapersPerGroup = () => {
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
         <div className="p-8">
-          <h1 className="text-3xl font-extrabold text-gray-900 text-center mb-8">
+          <h1 className="text-3xl font-extrabold text-gray-900 text-center mb-6">
             Total Papers Per Research Group
           </h1>
+
+          <div className="flex justify-center mb-8 space-x-4">
+            <button
+              onClick={() => setChartType('pie')}
+              className={`px-4 py-2 font-semibold rounded ${
+                chartType === 'pie' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700'
+              } hover:bg-indigo-700 hover:text-white transition`}
+            >
+              Pie Chart
+            </button>
+            <button
+              onClick={() => setChartType('area')}
+              className={`px-4 py-2 font-semibold rounded ${
+                chartType === 'area' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700'
+              } hover:bg-indigo-700 hover:text-white transition`}
+            >
+              Area Chart
+            </button>
+          </div>
 
           {isLoading && (
             <div className="flex justify-center items-center py-12">
@@ -74,53 +100,94 @@ const TotalPapersPerGroup = () => {
           )}
 
           {!isLoading && !error && chartData.length > 0 && (
-            <div className="mb-10 h-80">
+            <div className="mb-10 h-96">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={chartData}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                  barCategoryGap="20%"
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis
-                    dataKey="name"
-                    tick={{ fill: '#4B5563', fontWeight: '600' }}
-                    tickLine={false}
-                    interval={0}
-                    angle={-30}
-                    textAnchor="end"
-                    height={60}
-                  />
-                  <YAxis
-                    allowDecimals={false}
-                    tick={{ fill: '#4B5563', fontWeight: '600' }}
-                    tickLine={false}
-                    domain={[0, 'dataMax + 1']}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#1E40AF',
-                      borderRadius: '8px',
-                      color: '#fff',
-                      border: 'none',
-                    }}
-                    cursor={{ fill: 'rgba(59, 130, 246, 0.1)' }}
-                  />
-                  <Legend verticalAlign="top" height={36} />
-                  <Bar
-                    dataKey="total"
-                    fill="#3B82F6"
-                    radius={[8, 8, 0, 0]}
-                    barSize={40}
-                    animationDuration={800}
-                    onClick={(data) => {
-                      const groupName = data.name;
-                      const papers = groupData[groupName];
-                      handleGroupClick(groupName, papers);
-                    }}
-                    style={{ cursor: 'pointer' }}
-                  />
-                </BarChart>
+                {chartType === 'pie' ? (
+                  <PieChart>
+                    <Pie
+                      data={chartData}
+                      dataKey="total"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={120}
+                      fill="#3B82F6"
+                      label={({ name, percent }) =>
+                        `${name}: ${(percent * 100).toFixed(0)}%`
+                      }
+                      onClick={(data) => {
+                        const groupName = data.name;
+                        const papers = groupData[groupName];
+                        handleGroupClick(groupName, papers);
+                      }}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      {chartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(value) => [`${value} papers`, 'Total Papers']}
+                      contentStyle={{
+                        backgroundColor: '#1E40AF',
+                        borderRadius: '8px',
+                        color: '#fff',
+                        border: 'none',
+                      }}
+                    />
+                    <Legend verticalAlign="bottom" height={36} />
+                  </PieChart>
+                ) : (
+                  <AreaChart
+                    data={chartData}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                  >
+                    <defs>
+                      <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8} />
+                        <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis
+                      dataKey="name"
+                      tick={{ fill: '#4B5563', fontWeight: '600' }}
+                      tickLine={false}
+                      interval={0}
+                      angle={-30}
+                      textAnchor="end"
+                      height={60}
+                    />
+                    <YAxis
+                      allowDecimals={false}
+                      tick={{ fill: '#4B5563', fontWeight: '600' }}
+                      tickLine={false}
+                      domain={[0, 'dataMax + 1']}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: '#1E40AF',
+                        borderRadius: '8px',
+                        color: '#fff',
+                        border: 'none',
+                      }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="total"
+                      stroke="#3B82F6"
+                      fillOpacity={1}
+                      fill="url(#colorTotal)"
+                      animationDuration={800}
+                      onClick={(data) => {
+                        const groupName = data.name;
+                        const papers = groupData[groupName];
+                        handleGroupClick(groupName, papers);
+                      }}
+                      style={{ cursor: 'pointer' }}
+                    />
+                  </AreaChart>
+                )}
               </ResponsiveContainer>
             </div>
           )}
