@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+import ssl
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -129,6 +130,20 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Celery configuration
-CELERY_BROKER_URL = 'redis://localhost:6379/0'
-CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+
+# Upstash Redis Configuration
+REDIS_URL = "rediss://default:AYjnAAIjcDFhM2Q3N2VjODc4YjI0OWE4YmMwMzI2ZTA0OTg1OGU5MnAxMA@certain-lemur-35047.upstash.io:6379"
+
+# Celery Configuration
+CELERY_BROKER_URL = REDIS_URL + "/0"
+CELERY_RESULT_BACKEND = REDIS_URL + "/0"
+
+# SSL Configuration that will work with Upstash
+CELERY_REDIS_BACKEND_USE_SSL = {
+    'ssl_cert_reqs': ssl.CERT_NONE,
+    'ssl_check_hostname': False
+}
+CELERY_BROKER_USE_SSL = {
+    'ssl_cert_reqs': ssl.CERT_NONE,
+    'ssl_check_hostname': False
+}
