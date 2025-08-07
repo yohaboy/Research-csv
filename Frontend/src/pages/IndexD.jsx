@@ -46,41 +46,11 @@ const Dashboard = () => {
       link: '/author-details'
     },
     {
-      title: 'New Papers Since Date',
+      title: 'Generate Report',
       icon: 'bi-calendar-plus',
       description: 'Track recent publications by date range',
-      link: '/report-new-papers'
+      link: '/reports'
     },
-    {
-      title: 'Keyword Counts',
-      icon: 'bi-tags',
-      description: 'Analyze keyword frequency in publications',
-      link: '/report-keyword-counts'
-    },
-    {
-      title: 'Multi-Group Paper Count',
-      icon: 'bi-diagram-3',
-      description: 'Papers with authors from multiple groups',
-      link: '/report-multi-group-papers'
-    },
-    {
-      title: 'Group/Author Multi-Group Counts',
-      icon: 'bi-person-lines-fill',
-      description: 'Detailed collaboration analysis',
-      link: '/report-group-author-multi-group'
-    },
-    {
-      title: 'Total Papers Per Group',
-      icon: 'bi-bar-chart',
-      description: 'Publication counts by research group',
-      link: '/report-total-papers-per-group'
-    },
-    {
-      title: 'Keyword Counts Per Group',
-      icon: 'bi-pie-chart',
-      description: 'Keyword analysis by research group',
-      link: '/report-keyword-counts-per-group'
-    }
   ];
 
   return (
