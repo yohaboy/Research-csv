@@ -39,13 +39,13 @@ A comprehensive Django-based research management system designed to track and an
 - **Database**: SQLite (development) / PostgreSQL (production)
 - **Task Queue**: Celery with Redis
 - **APIs**: Scopus, Google Scholar, ORCID
-- **Frontend**: Django Templates with internal CSS
+- **Frontend**: React
 
 ## 📋 Prerequisites
 
 - Python 3.8+
 - Redis server
-- Scopus API key (optional)
+- Scopus API key
 - Internet connection for API calls
 
 ## 🚀 Installation
@@ -105,25 +105,35 @@ celery -A unisa_research worker --loglevel=info
 python manage.py runserver
 ```
 
+### 3. Install Dependencies for Frontend
+
+```bash
+cd Frontend
+npm install
+```
+
+### 9. Run React server
+
+```bash
+npm run dev
+```
+
 ## 📊 Usage
 
 ### 1. Import Authors
 
-- Navigate to `/upload/`
-- Upload a CSV file with author information
+- Click upload
+- Upload a CSV or excel file with author information
 - CSV format: `firstName,lastName,group,scopus,scholar,orcid`
 
 ### 2. Fetch Publications
 
-- Click "Fetch Publications" to trigger background publication retrieval
+- Click "process csv" to trigger background publication retrieval
 - System will automatically query Scopus, Google Scholar, and ORCID APIs
 
 ### 3. View Reports
 
-- **New Papers**: `/report/new-papers/` - Count of recent publications
-- **Keyword Analysis**: `/report/keyword-counts/` - Keyword frequency analysis
-- **Multi-group Papers**: `/report/multi-group-papers/` - Cross-group collaborations
-- **Group Analytics**: `/report/total-papers-per-group/` - Publications per research group
+- Click "generate report" to generate reports
 
 ## 🗄️ Database Schema
 
@@ -182,10 +192,7 @@ CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
 1. **Celery Worker Not Starting**
    - Ensure Redis server is running
    - Check Redis connection settings
-2. **API Rate Limits**
-   - Implement request throttling
-   - Use background tasks for large datasets
-3. **Database Errors**
+2. **Database Errors**
    - Run `python manage.py makemigrations`
    - Run `python manage.py migrate`
 
