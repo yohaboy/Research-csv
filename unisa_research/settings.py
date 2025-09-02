@@ -87,9 +87,9 @@ WSGI_APPLICATION = 'unisa_research.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'ivectoch_analytics',
-        'USER': 'ivectoch_analytics',
-        'PASSWORD': 'Cinnamon5-Phobia7-Muscular9-Helper6-Relock0',
+        'NAME': '',
+        'USER': '',
+        'PASSWORD': '',
         'HOST': 'localhost',
         'PORT': '3306',
     }
