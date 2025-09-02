@@ -31,7 +31,7 @@ const TotalPapersPerGroup = () => {
     setError(null);
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://127.0.0.1:8000/api/stats/total-papers-per-group/', {
+      const response = await axios.get('http://analytics.ive.center/api/stats/total-papers-per-group/', {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: 'application/json',
@@ -54,8 +54,8 @@ const TotalPapersPerGroup = () => {
   const handleExport = async (type) => {
     const endpoint =
       type === 'pdf'
-        ? 'http://127.0.0.1:8000/api/export-papers-per-group-pdf/'
-        : 'http://127.0.0.1:8000/api/export-papers-per-group-excel/';
+        ? 'http://analytics.ive.center/api/export-papers-per-group-pdf/'
+        : 'http://analytics.ive.center/api/export-papers-per-group-excel/';
 
     const token = localStorage.getItem('token');
 

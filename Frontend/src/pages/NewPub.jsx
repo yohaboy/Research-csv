@@ -22,7 +22,7 @@ const NewPublicationsCount = () => {
     setError(null);
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://127.0.0.1:8000/api/stats/new-papers/', {
+      const response = await axios.get('http://analytics.ive.center/api/stats/new-papers/', {
         params: { since: date },
         headers: {
           Authorization: `Bearer ${token}`,
@@ -74,7 +74,7 @@ const NewPublicationsCount = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://127.0.0.1:8000/api/export-excel-filtered/', {
+      const response = await axios.get('http://analytics.ive.center/api/export-excel-filtered/', {
         params: { since: sinceDate },
         headers: { Authorization: `Bearer ${token}` },
         responseType: 'blob',
@@ -100,7 +100,7 @@ const NewPublicationsCount = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://127.0.0.1:8000/api/export-pdf-filtered/', {
+      const response = await axios.get('http://analytics.ive.center/api/export-pdf-filtered/', {
         params: { since: sinceDate },
         headers: { Authorization: `Bearer ${token}` },
         responseType: 'blob',

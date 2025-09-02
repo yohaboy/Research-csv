@@ -14,7 +14,7 @@ const KeywordCounts = () => {
     setError(null);
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://127.0.0.1:8000/api/stats/keywords/', {
+      const response = await axios.get('http://analytics.ive.center/api/stats/keywords/', {
         params: { since: date },
         headers: {
           'Authorization': `Bearer ${token}`,

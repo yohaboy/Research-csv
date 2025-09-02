@@ -14,7 +14,7 @@ const KeywordCountsPerGroup = () => {
     setError(null);
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://127.0.0.1:8000/api/stats/keywords-per-group/', {
+      const response = await axios.get('http://analytics.ive.center/api/stats/keywords-per-group/', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Accept': 'application/json'
@@ -34,7 +34,7 @@ const KeywordCountsPerGroup = () => {
     setError(null);
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://127.0.0.1:8000/api/publications/', {
+      const response = await axios.get('http://analytics.ive.center/api/publications/', {
         params: {
           research_group: groupName,
           keywords__icontains: keyword

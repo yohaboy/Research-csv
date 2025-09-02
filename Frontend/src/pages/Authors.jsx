@@ -13,7 +13,7 @@ const AuthorDetails = () => {
       setIsLoading(true);
       try {
         const token = localStorage.getItem('token'); // Assuming you store JWT token
-        const response = await axios.get('http://127.0.0.1:8000/api/authors/', {
+        const response = await axios.get('http://analytics.ive.center/api/authors/', {
           params: { search: searchQuery },
           headers: { 
             'Authorization': `Bearer ${token}`,

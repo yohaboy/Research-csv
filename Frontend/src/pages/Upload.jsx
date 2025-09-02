@@ -33,7 +33,7 @@ const FileUpload = () => {
       const formData = new FormData();
       formData.append('csv_file', file);
 
-      const response = await axios.post('http://127.0.0.1:8000/api/upload/', formData, {
+      const response = await axios.post('http://analytics.ive.center/api/upload/', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           'X-Requested-With': 'XMLHttpRequest',
@@ -63,7 +63,7 @@ const FileUpload = () => {
     }
 
     try {
-      const response = await axios.post('http://127.0.0.1:8000/api/upload/', { clear_data: true });
+      const response = await axios.post('http://analytics.ive.center/api/upload/', { clear_data: true });
       setMessages([{ text: response.data.message, type: 'success' }]);
     } catch (error) {
       setMessages([{ text: `Error clearing data: ${error.message}`, type: 'error' }]);

@@ -29,7 +29,7 @@ const GroupAuthorMultiGroupChart = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.get(
-        'http://127.0.0.1:8000/api/stats/group-author-multi-group/',
+        'http://analytics.ive.center/api/stats/group-author-multi-group/',
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -66,8 +66,8 @@ const GroupAuthorMultiGroupChart = () => {
     const token = localStorage.getItem('token');
     const url =
       type === 'excel'
-        ? 'http://127.0.0.1:8000/api/export-group-author-multigroup-excel/'
-        : 'http://127.0.0.1:8000/api/export-group-author-multigroup-pdf/';
+        ? 'http://analytics.ive.center/api/export-group-author-multigroup-excel/'
+        : 'http://analytics.ive.center/api/export-group-author-multigroup-pdf/';
 
     try {
       const response = await axios.get(url, {

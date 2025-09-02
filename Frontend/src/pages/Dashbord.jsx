@@ -27,7 +27,7 @@ const ScholarDashboard = () => {
       if (filters.source) params.append('source', filters.source);
 
       // Single API call to get all needed data
-      const res = await axios.get(`http://127.0.0.1:8000/api/publications/?${params.toString()}`);
+      const res = await axios.get(`http://analytics.ive.center/api/publications/?${params.toString()}`);
 
       setResearchGroups(Array.isArray(res.data.research_groups) ? res.data.research_groups : []);
       setAuthors(Array.isArray(res.data.authors) ? res.data.authors : []);

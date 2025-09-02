@@ -14,7 +14,7 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await axios.get('http://127.0.0.1:8000/api/index/');
+        const response = await axios.get('http://analytics.ive.center/api/index/');
         setStats(response.data);
       } catch (error) {
         console.error('Error fetching dashboard stats:', error);

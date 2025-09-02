@@ -22,7 +22,7 @@ const MultiGroupPapersCount = () => {
     setError(null);
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://127.0.0.1:8000/api/stats/multi-group-papers/', {
+      const response = await axios.get('http://analytics.ive.center/api/stats/multi-group-papers/', {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: 'application/json',
@@ -63,8 +63,8 @@ const MultiGroupPapersCount = () => {
   const handleExport = async (type) => {
     const token = localStorage.getItem('token');
     const url = type === 'excel'
-      ? 'http://127.0.0.1:8000/api/export-multi-group-excel/'
-      : 'http://127.0.0.1:8000/api/export-multi-group-pdf/';
+      ? 'http://analytics.ive.center/api/export-multi-group-excel/'
+      : 'http://analytics.ive.center/api/export-multi-group-pdf/';
 
     try {
       const response = await axios.get(url, {
