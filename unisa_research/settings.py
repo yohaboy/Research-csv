@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'research',
+    'django_q'
     
 ]
 
@@ -84,16 +85,16 @@ WSGI_APPLICATION = 'unisa_research.wsgi.application'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': '',
-        'USER': '',
-        'PASSWORD': '',
-        'HOST': 'localhost',
-        'PORT': '3306',
-    }
-}
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.mysql',
+#         'NAME': '',
+#         'USER': '',
+#         'PASSWORD': '',
+#         'HOST': 'localhost',
+#         'PORT': '3306',
+#     }
+# }
 
 
 DATABASES = {
@@ -102,6 +103,20 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
+
+# Django-Q configuration using database as broker
+Q_CLUSTER = {
+    "name": "research-queue",
+    "workers": 4,
+    "recycle": 500,
+    "timeout": 60,
+    "retry": 120,
+    "queue_limit": 50,
+    "bulk": 10,
+    "orm": "default",
+}
+
 
 
 # Password validation
@@ -151,20 +166,3 @@ STATICFILES_DIRS = [
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-
-# Upstash Redis Configuration
-REDIS_URL = "rediss://default:AYjnAAIjcDFhM2Q3N2VjODc4YjI0OWE4YmMwMzI2ZTA0OTg1OGU5MnAxMA@certain-lemur-35047.upstash.io:6379"
-
-# Celery Configuration
-CELERY_BROKER_URL = REDIS_URL + "/0"
-CELERY_RESULT_BACKEND = REDIS_URL + "/0"
-
-# SSL Configuration that will work with Upstash
-CELERY_REDIS_BACKEND_USE_SSL = {
-    'ssl_cert_reqs': ssl.CERT_NONE,
-    'ssl_check_hostname': False
-}
-CELERY_BROKER_USE_SSL = {
-    'ssl_cert_reqs': ssl.CERT_NONE,
-    'ssl_check_hostname': False
-}

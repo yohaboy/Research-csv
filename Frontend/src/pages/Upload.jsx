@@ -46,7 +46,6 @@ const FileUpload = () => {
       } else {
         setStatus(response.data.message);
         setTaskId(response.data.task_id);
-        pollTaskStatus(response.data.task_id);
       }
     } catch (error) {
       setMessages([{ text: `Error processing file: ${error.message}`, type: 'error' }]);
@@ -70,20 +69,20 @@ const FileUpload = () => {
     }
   };
 
-  const pollTaskStatus = async (taskId) => {
-    const interval = setInterval(async () => {
-      try {
-        const response = await axios.get(`/check_csv_task_status/?task_id=${taskId}`);
-        if (response.data.ready) {
-          clearInterval(interval);
-          setStatus('Processing finished!');
-        }
-      } catch (error) {
-        clearInterval(interval);
-        setMessages([{ text: 'Error checking task status.', type: 'error' }]);
-      }
-    }, 2000);
-  };
+  // const pollTaskStatus = async (taskId) => {
+  //   const interval = setInterval(async () => {
+  //     try {
+  //       const response = await axios.get(`/check_csv_task_status/?task_id=${taskId}`);
+  //       if (response.data.ready) {
+  //         clearInterval(interval);
+  //         setStatus('Processing finished!');
+  //       }
+  //     } catch (error) {
+  //       clearInterval(interval);
+  //       setMessages([{ text: 'Error checking task status.', type: 'error' }]);
+  //     }
+  //   }, 2000);
+  // };
 
   return (
     <div className="max-w-md mx-auto mt-16 bg-white rounded-2xl shadow-lg p-8">

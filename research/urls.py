@@ -18,7 +18,7 @@ urlpatterns = [
     path('report/total-papers-per-group/', views.report_total_papers_per_group, name='report_total_papers_per_group'),#done
     path('report/keyword-counts-per-group/', views.report_keyword_counts_per_group, name='report_keyword_counts_per_group'),#done
     path('fetch-publications/', views.trigger_fetch_publications, name='fetch_publications'),
-    path('check_csv_task_status/', views.check_csv_task_status, name='check_csv_task_status'),
+    # path('check_csv_task_status/', views.check_csv_task_status, name='check_csv_task_status'),
     path('scholar/', views.scholar_dashboard, name='scholar_dashboard'),#done
 
     # API URLs
@@ -35,7 +35,7 @@ urlpatterns = [
     path('api/stats/total-papers-per-group/', TotalPapersPerGroup.as_view(), name='api_total_papers_per_group'),
     path('api/stats/keywords-per-group/', KeywordCountsPerGroup.as_view(), name='api_keywords_per_group'),
     # path('api/fetch-publications/', TriggerFetchPublications.as_view(), name='api_fetch_publications'),
-    path('api/check-task-status/', CheckTaskStatus.as_view(), name='api_check_task_status'),
+    # path('api/check-task-status/', CheckTaskStatus.as_view(), name='api_check_task_status'),
     path('api/export-pdf/', ExportAllPDF.as_view(), name='export_pdf'),
     path('api/export-excel/', ExportAllExcel.as_view(), name='export_excel'),
 

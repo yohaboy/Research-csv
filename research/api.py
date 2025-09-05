@@ -26,197 +26,221 @@ from .serializers import (
     AuthorPublicationSerializer
 )
 
+from django_q.tasks import async_task
+from django_q.models import Task
 
 
 class BaseAPIView(APIView):
     permission_classes = [AllowAny]
 
     def get_since_date(self, request):
-        since = request.query_params.get('since')
+        since = request.query_params.get("since")
         if since:
             try:
-                return datetime.strptime(since, '%Y-%m-%d').date()
+                return datetime.strptime(since, "%Y-%m-%d").date()
             except ValueError:
                 pass
         return None
 
+
 class IndexAPIView(APIView):
     def get(self, request):
         data = {
-            'authors_count': Author.objects.count(),
-            'publications_count': Publication.objects.count(),
-            'research_groups_count': ResearchGroup.objects.count(),
-            'author_publications_count': AuthorPublication.objects.count(),
+            "authors_count": Author.objects.count(),
+            "publications_count": Publication.objects.count(),
+            "research_groups_count": ResearchGroup.objects.count(),
+            "author_publications_count": AuthorPublication.objects.count(),
         }
         return Response(data)
 
+
 class AuthorList(generics.ListAPIView):
-    queryset = Author.objects.select_related('research_group').all()
+    queryset = Author.objects.select_related("research_group").all()
     serializer_class = AuthorSerializer
     permission_classes = [AllowAny]
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        search_query = self.request.query_params.get('search', '')
+        search_query = self.request.query_params.get("search", "")
         if search_query:
             queryset = queryset.filter(
-            Q(first_name__icontains=search_query) | 
-            Q(last_name__icontains=search_query)
+                Q(first_name__icontains=search_query)
+                | Q(last_name__icontains=search_query)
             )
         return queryset
+
 
 class ResearchGroupList(generics.ListAPIView):
     queryset = ResearchGroup.objects.all()
     serializer_class = ResearchGroupSerializer
     permission_classes = [AllowAny]
 
+
 class PublicationList(APIView):
     def get(self, request, *args, **kwargs):
-        selected_group = request.GET.get('group')
-        selected_author = request.GET.get('author')
-        selected_source = request.GET.get('source')
+        selected_group = request.GET.get("group")
+        selected_author = request.GET.get("author")
+        selected_source = request.GET.get("source")
 
         publications = Publication.objects.all()
 
-        # Filter by research group via authors
         if selected_group:
-            publications = publications.filter(authorpublication__author__research_group__id=selected_group)
+            publications = publications.filter(
+                authorpublication__author__research_group__id=selected_group
+            )
         if selected_author:
-            publications = publications.filter(authorpublication__author__id=selected_author)
+            publications = publications.filter(
+                authorpublication__author__id=selected_author
+            )
         if selected_source:
             publications = publications.filter(source=selected_source)
 
         publications = publications.distinct()
 
-        research_groups = ResearchGroup.objects.all()
-        authors = Author.objects.all()
-
         pub_serializer = PublicationSerializer(publications, many=True)
-        grp_serializer = ResearchGroupSerializer(research_groups, many=True)
-        author_serializer = AuthorSerializer(authors, many=True)
+        grp_serializer = ResearchGroupSerializer(
+            ResearchGroup.objects.all(), many=True
+        )
+        author_serializer = AuthorSerializer(Author.objects.all(), many=True)
 
-        return Response({
-            'publications': pub_serializer.data,
-            'research_groups': grp_serializer.data,
-            'authors': author_serializer.data
-        })
+        return Response(
+            {
+                "publications": pub_serializer.data,
+                "research_groups": grp_serializer.data,
+                "authors": author_serializer.data,
+            }
+        )
 
 
 class FileUploadView(BaseAPIView):
-    parser_classes = [parsers.MultiPartParser, parsers.FormParser , parsers.JSONParser]
+    parser_classes = [
+        parsers.MultiPartParser,
+        parsers.FormParser,
+        parsers.JSONParser,
+    ]
 
     def post(self, request, *args, **kwargs):
-        if request.data.get('clear_data'):
+        if request.data.get("clear_data"):
             AuthorPublication.objects.all().delete()
             Publication.objects.all().delete()
             Author.objects.all().delete()
             ResearchGroup.objects.all().delete()
-            return Response({'message': 'All data has been cleared from the database.'}, status=status.HTTP_200_OK)
+            return Response(
+                {"message": "All data cleared."}, status=status.HTTP_200_OK
+            )
 
-        uploaded_file = request.FILES.get('csv_file')
+        uploaded_file = request.FILES.get("csv_file")
         if not uploaded_file:
-            return Response({'error': 'No file provided.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "No file provided."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         filename = uploaded_file.name.lower()
-        if not filename.endswith(('.csv', '.xls', '.xlsx')):
-            return Response({'error': 'File must be .csv, .xls, or .xlsx format.'}, status=status.HTTP_400_BAD_REQUEST)
+        if not filename.endswith((".csv", ".xls", ".xlsx")):
+            return Response(
+                {"error": "File must be .csv, .xls, or .xlsx format."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         try:
             file_bytes = uploaded_file.read()
-            from .tasks import process_file_upload ,fetch_publications_task
-            
-            task_chain = chain(
-                process_file_upload.s(file_bytes, filename),
-                fetch_publications_task.s()
+            from .tasks import process_file_upload, fetch_publications_task
+
+            task_id = async_task(
+                "research.tasks.process_file_upload",
+                file_bytes,
+                filename,
+                hook="research.tasks.fetch_publications_task",  # callback after upload
             )
-            task_result = task_chain.apply_async()
-            
-            return Response({
-                'message': 'File upload started.',
-                'task_id':task_result.id
-            }, status=status.HTTP_202_ACCEPTED)
-        
+
+            return Response(
+                {"message": "File upload started.", "task_id": task_id},
+                status=status.HTTP_202_ACCEPTED,
+            )
         except Exception as e:
-            return Response({'error': f'Error processing file: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(
+                {"error": f"Error processing file: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
 
 class NewPublicationsCount(BaseAPIView):
     def get(self, request):
         since_date = self.get_since_date(request)
         if not since_date:
             return Response(
-                {"error": "Invalid or missing 'since' parameter (format: YYYY-MM-DD)"},
-                status=status.HTTP_400_BAD_REQUEST
+                {
+                    "error": "Invalid or missing 'since' parameter (format: YYYY-MM-DD)"
+                },
+                status=status.HTTP_400_BAD_REQUEST,
             )
-        
-        papers = Publication.objects.filter(publication_date__gt=since_date)    
-        count = papers.count()
+
+        papers = Publication.objects.filter(publication_date__gt=since_date)
         serialized_papers = PublicationSerializer(papers, many=True)
-        return Response({"count": count, "since": since_date ,"papers":serialized_papers.data})
+        return Response(
+            {"count": papers.count(), "since": since_date, "papers": serialized_papers.data}
+        )
+
 
 class KeywordCounts(BaseAPIView):
     def get(self, request):
         since_date = self.get_since_date(request)
         qs = Publication.objects.all()
-        
         if since_date:
             qs = qs.filter(publication_date__gt=since_date)
-            
+
         keyword_counter = {}
         for pub in qs:
-            for kw in pub.keywords.split(','):
+            for kw in pub.keywords.split(","):
                 kw = kw.strip().lower()
                 if kw:
                     keyword_counter[kw] = keyword_counter.get(kw, 0) + 1
-                    
+
         return Response({"keywords": keyword_counter, "since": since_date})
+
 
 class MultiGroupPapersCount(BaseAPIView):
     def get(self, request):
         multi_group_pub_ids = set()
         for pub in Publication.objects.all():
             groups = set(
-                pub.authorpublication_set
-                .select_related('author__research_group')
-                .values_list('author__research_group__name', flat=True)
+                pub.authorpublication_set.select_related(
+                    "author__research_group"
+                ).values_list("author__research_group__name", flat=True)
             )
             if len(groups) > 1:
                 multi_group_pub_ids.add(pub.id)
-        
+
         multi_group_pubs_qs = Publication.objects.filter(id__in=multi_group_pub_ids)
         serialized_pubs = PublicationSerializer(multi_group_pubs_qs, many=True)
 
-        return Response({
-            "count": multi_group_pubs_qs.count(),
-            "publications": serialized_pubs.data
-        })
+        return Response(
+            {"count": multi_group_pubs_qs.count(), "publications": serialized_pubs.data}
+        )
 
 
 class GroupAuthorMultiGroup(BaseAPIView):
     def get(self, request):
         result = {}
-
         for group in ResearchGroup.objects.all():
             authors = Author.objects.filter(research_group=group)
             author_counts = {}
-
             for author in authors:
                 count = 0
                 for ap in author.authorpublication_set.all():
                     pub = ap.publication
                     groups = set(
-                        pub.authorpublication_set
-                        .select_related('author__research_group')
-                        .values_list('author__research_group__name', flat=True)
+                        pub.authorpublication_set.select_related(
+                            "author__research_group"
+                        ).values_list("author__research_group__name", flat=True)
                     )
                     if len(groups) > 1:
                         count += 1
-
                 if count > 0:
                     author_counts[str(author)] = count
-
             if author_counts:
                 result[group.name] = author_counts
-
         return Response({"data": result})
 
 
@@ -228,14 +252,13 @@ class TotalPapersPerGroup(BaseAPIView):
             pub_ids = set()
             for author in authors:
                 pub_ids.update(
-                    author.authorpublication_set.values_list('publication_id', flat=True)
+                    author.authorpublication_set.values_list("publication_id", flat=True)
                 )
-
             pubs = Publication.objects.filter(id__in=pub_ids)
             serializer = PublicationSerializer(pubs, many=True)
             result[group.name] = serializer.data
-
         return Response({"data": result})
+
 
 class KeywordCountsPerGroup(BaseAPIView):
     def get(self, request):
@@ -244,40 +267,51 @@ class KeywordCountsPerGroup(BaseAPIView):
             authors = Author.objects.filter(research_group=group)
             pub_ids = set()
             for author in authors:
-                pub_ids.update(author.authorpublication_set.values_list('publication_id', flat=True))
+                pub_ids.update(
+                    author.authorpublication_set.values_list("publication_id", flat=True)
+                )
             keyword_counter = {}
             pubs = Publication.objects.filter(id__in=pub_ids)
             for pub in pubs:
-                for kw in pub.keywords.split(','):
+                for kw in pub.keywords.split(","):
                     kw = kw.strip().lower()
                     if kw:
                         keyword_counter[kw] = keyword_counter.get(kw, 0) + 1
             result[group.name] = keyword_counter
         return Response(result)
 
+
 class TriggerFetchPublications(BaseAPIView):
     def post(self, request):
         from .tasks import fetch_publications_task
-        task = fetch_publications_task.delay()
-        return Response({"status": "started", "task_id": task.id})
+        task_id = async_task("research.tasks.fetch_publications_task")
+        return Response({"status": "started", "task_id": task_id})
+
 
 class CheckTaskStatus(BaseAPIView):
-    def get(self, request):
-        task_id = request.query_params.get('task_id')
-        if not task_id:
-            return Response(
-                {"error": "No task_id provided"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-            
-        from celery.result import AsyncResult
-        result = AsyncResult(task_id)
-        return Response({
-            "task_id": task_id,
-            "status": result.status,
-            "ready": result.ready()
-        })
-    
+    pass
+    # def get(self, request):
+    #     task_id = request.query_params.get("task_id")
+    #     if not task_id:
+    #         return Response(
+    #             {"error": "No task_id provided"}, status=status.HTTP_400_BAD_REQUEST
+    #         )
+
+    #     try:
+    #         task = Task.objects.get(id=task_id)
+    #         return Response(
+    #             {
+    #                 "task_id": str(task.id),
+    #                 "success": task.success,
+    #                 "result": task.result,
+    #                 "started": task.started,
+    #                 "stopped": task.stopped,
+    #             }
+    #         )
+    #     except Task.DoesNotExist:
+    #         return Response({"error": "Task not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+   
 class ExportAllExcel(APIView):
     def get(self, request):
         def strip_tz(value):
